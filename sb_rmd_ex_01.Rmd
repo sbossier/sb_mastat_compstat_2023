@@ -1,32 +1,74 @@
 ---
 title: "Edgar Anderson’s Iris Data"
-output: pdf_document
+output:
+  pdf_document:
+header-includes:
+  - "\\makeatletter"
+  - "\\renewcommand*\\l@section[2]{\\@dottedtocline{1}{1.5em}{2.3em}{#1}{#2}\\addvspace{0.7em}}"
+  - "\\makeatother"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-# Contents
-[Description](#Description)
 
-# Description
+\tableofcontents
 
-## R Markdown
+\section{Description}
+This famous (Fisher’s or Anderson’s) iris data set gives the measurements in centimeters of the variables
+sepal length and width and petal length and width, respectively, for 50 flowers from each of 3 species of iris.
+The species are _Iris setosa_, _versicolor_, and _virginica_.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+\section{Usage}
+`iris`
 
-```{r cars}
-summary(cars)
+\section{Format}
+`iris` is a data frame with 150 cases (rows) and 5 variables (columns) named:
+
+- `Sepal.Length`
+- `Sepal.Width`
+- `Petal.Length`
+- `Petal.Width`
+- `Species`
+
+\section{Source}
+Anderson, Edgar (1935). "The irises of the Gaspe Peninsula.", _Bulletin of the American Iris Society_, __59__: 2–5.
+Fisher, Ronald A. (1936). "The use of multiple measurements in taxonomic problems.", _Annals of Eugenics_, __7__ (Part II): 179–188.
+
+\section{Examples}
+We investigate the Sepal and Petal leaves for the three species in the Iris data:
+
+```{r}
+summary(iris)
 ```
 
-## Including Plots
+To examine the Sepal leaves, we select the length and the width:
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r results='hide'}
+llen <- iris$Sepal.Length
+lwid <- iris$Sepal.Width
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Then we plot the data:
+
+```{r}
+plot(llen, lwid, xlab = "Length", ylab = "Width",
+     pch = 20, col = as.numeric(iris$Species))
+legend("bottomright", legend = levels(iris$Species), col = 1:3, pch = 20)
+```
+
+We can also select the Petal leaves:
+
+```{r results='hide'}
+llen <- iris$Petal.Length
+lwid <- iris$Petal.Width
+```
+
+This gives us the following plot:
+
+```{r echo=FALSE}
+plot(llen, lwid, xlab = "Length", ylab = "Width",
+     pch = 20, col = as.numeric(iris$Species))
+legend("bottomright", legend = levels(iris$Species), col = 1:3, pch = 20)
+```
