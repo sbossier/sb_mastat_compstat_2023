@@ -1,0 +1,77 @@
+---
+title: "Exercises - Class 2; Objects and classes"
+author: "Sander Bossier"
+date: "2023-10-10"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1.
+
+Create the following vectors with the function `rep()` (or its variants described on its help page):
+
+```{r}
+rep(3, times = 5)
+
+rep(c(3, 1, 2), each = 2)
+
+rep(c(3, 1, 2), length.out = 5)
+
+rep(c(3, 1, 2), times = c(3, 1, 2))
+```
+
+## 2.
+
+Create the following vectors with the function `seq()` (or its variants described on its help page):
+
+```{r}
+seq(from = 1, to = 9, by = 2)
+
+seq(from = 1, to = 10, along.with = c(3, 2, 1))
+
+seq(from = 1, to = 10, length.out = 7)
+
+seq(from = 10, to = 2, by = -2)
+```
+
+## 3.
+
+The function `replicate()` is sometimes wrongly used instead of `rep()` to repeat values. Use the function
+`system.time()` to measure the performance of both functions in repeating the value 3 for a total of 1e6
+times.
+
+```{r}
+system.time(
+  rep(1, times = 1e6)
+)
+
+system.time(
+  replicate(1e6, 1)
+)
+```
+
+## 4.
+
+The difference between `integer` and `double`(-precision floating point number) values is the byte size with which R stores them in memory. Byte size is also dependent on the attributes of the object. Use the function object.size() to show this for:
+List these six objects in increasing order of byte size in your R code.
+
+```{r}
+obj01 <- 1:10
+obj02 <- seq(1, 10, by = 1)
+obj03 <- matrix(1:10, nrow = 5)
+obj04 <- matrix(seq(1, 10, by = 1), nrow = 5)
+obj05 <- as.character(1:10)
+obj06 <- as.raw(seq(1, 10, by = 1))
+
+print(c("obj06", object.size(obj06)))
+print(c("obj01", object.size(obj01)))
+print(c("obj02", object.size(obj02)))
+print(c("obj03", object.size(obj03)))
+print(c("obj04", object.size(obj04)))
+print(c("obj05", object.size(obj05)))
+```
+
+## 5.
