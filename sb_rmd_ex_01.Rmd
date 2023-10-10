@@ -1,58 +1,56 @@
 ---
 title: "Edgar Anderson’s Iris Data"
 output:
-  pdf_document:
-header-includes:
-  - "\\makeatletter"
-  - "\\renewcommand*\\l@section[2]{\\@dottedtocline{1}{1.5em}{2.3em}{#1}{#2}\\addvspace{0.7em}}"
-  - "\\makeatother"
+    pdf_document:
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(width = 100)
 ```
 
 \tableofcontents
 
-\section{Description}
-This famous (Fisher’s or Anderson’s) iris data set gives the measurements in centimeters of the variables
-sepal length and width and petal length and width, respectively, for 50 flowers from each of 3 species of iris.
-The species are _Iris setosa_, _versicolor_, and _virginica_.
+\subsection{Description}
 
+This famous ([Fisher's](https://en.wikipedia.org/wiki/Ronald_Fisher) or [Anderson's](https://en.wikipedia.org/wiki/Edgar_Anderson)) iris data set gives the measurements in centimeters of the variables sepal length and width and petal length and width, respectively, for 50 flowers from each of 3 species of iris. The species are *Iris setosa*, *versicolor*, and *virginica*.
 
-\section{Usage}
+\subsection{Usage}
+
 `iris`
 
-\section{Format}
+\subsection{Format}
+
 `iris` is a data frame with 150 cases (rows) and 5 variables (columns) named:
 
-- `Sepal.Length`
-- `Sepal.Width`
-- `Petal.Length`
-- `Petal.Width`
-- `Species`
+-   `Sepal.Length`
+-   `Sepal.Width`
+-   `Petal.Length`
+-   `Petal.Width`
+-   `Species`
 
-\section{Source}
-Anderson, Edgar (1935). "The irises of the Gaspe Peninsula.", _Bulletin of the American Iris Society_, __59__: 2–5.
-Fisher, Ronald A. (1936). "The use of multiple measurements in taxonomic problems.", _Annals of Eugenics_, __7__ (Part II): 179–188.
+\subsection{Source}
 
-\section{Examples}
+Anderson, Edgar (1935). "The irises of the Gaspe Peninsula." *Bulletin of the American Iris Society*, **59**: 2--5. Fisher, Ronald A. (1936). "The use of multiple measurements in taxonomic problems." *Annals of Eugenics*, **7** (Part II): 179--188.
+
+\subsection{Examples}
+
 We investigate the Sepal and Petal leaves for the three species in the Iris data:
 
-```{r}
+```{r overview}
 summary(iris)
 ```
 
 To examine the Sepal leaves, we select the length and the width:
 
-```{r results='hide'}
+```{r Sepal_vars, results='hide'}
 llen <- iris$Sepal.Length
 lwid <- iris$Sepal.Width
 ```
 
 Then we plot the data:
 
-```{r}
+```{r Sepal_plot}
 plot(llen, lwid, xlab = "Length", ylab = "Width",
      pch = 20, col = as.numeric(iris$Species))
 legend("bottomright", legend = levels(iris$Species), col = 1:3, pch = 20)
@@ -60,14 +58,14 @@ legend("bottomright", legend = levels(iris$Species), col = 1:3, pch = 20)
 
 We can also select the Petal leaves:
 
-```{r results='hide'}
+```{r Petal_vars, results='hide'}
 llen <- iris$Petal.Length
 lwid <- iris$Petal.Width
 ```
 
 This gives us the following plot:
 
-```{r echo=FALSE}
+```{r Petal_plot, ref.label = "Sepal_plot",echo=FALSE}
 plot(llen, lwid, xlab = "Length", ylab = "Width",
      pch = 20, col = as.numeric(iris$Species))
 legend("bottomright", legend = levels(iris$Species), col = 1:3, pch = 20)
