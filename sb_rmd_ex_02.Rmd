@@ -63,15 +63,112 @@ obj01 <- 1:10
 obj02 <- seq(1, 10, by = 1)
 obj03 <- matrix(1:10, nrow = 5)
 obj04 <- matrix(seq(1, 10, by = 1), nrow = 5)
-obj05 <- as.character(1:10)
-obj06 <- as.raw(seq(1, 10, by = 1))
+obj05 <- 1:10
+class(obj05) <- "humpty"
+obj06 <- seq(1, 10, by = 1)
+class(obj06) <- "dumpty"
 
-print(c("obj06", object.size(obj06)))
-print(c("obj01", object.size(obj01)))
-print(c("obj02", object.size(obj02)))
-print(c("obj03", object.size(obj03)))
-print(c("obj04", object.size(obj04)))
-print(c("obj05", object.size(obj05)))
+
+print(c("obj01 size:", object.size(obj01)))
+print(c("obj02 size:", object.size(obj02)))
+print(c("obj03 size:", object.size(obj03)))
+print(c("obj05 size:", object.size(obj05), "class:", class(obj05)))
+print(c("obj04 size:", object.size(obj04)))
+print(c("obj06 size:", object.size(obj06), "class:", class(obj06)))
 ```
 
 ## 5.
+
+Rank the following objects/vectors according to the byte size. Which result surprises you?
+
+```{r}
+object.size(rep(c(TRUE, FALSE), 5))
+object.size(seq(1, 10, by = 1))
+object.size(vector(mode = "logical", length = 10))
+object.size(vector(mode = "numeric", length = 10))
+object.size(vector(mode = "list", length = 10))
+object.size(vector(mode = "character", length = 10))
+```
+
+## 6.
+
+```{r}
+object.size(NULL)
+object.size(NA)
+obj07 <- c(label = NULL)
+obj08 <- c(label = NA)
+object.size(obj07)
+object.size(obj08)
+```
+
+## 7.
+
+```{r}
+as.numeric(2 * log(1i) / 1i) == pi
+```
+
+## 8.
+
+```{r}
+alphabetS4 <- setClass("alphabetS4", slots = c(symbols = "character", size = "numeric", type = "character"))
+
+obj09 <- new("alphabetS4", symbols = letters, size = length(letters), type = "roman")
+
+obj09
+
+alphabetRC <- setRefClass("alphabetRC", fields = c(symbols = "character", size = "numeric", type = "character"))
+
+obj10 <- new("alphabetRC", symbols = letters, size = length(letters), type = "roman")
+
+obj10
+```
+
+## 9.
+
+```{r}
+obj11 <- list(
+  symbols = letters,
+  size = length(letters),
+  type = "roman"
+)
+
+obj12 <- new.env()
+obj12$symbols <- letters
+obj12$size <- length(letters)
+obj12$type <- "roman"
+```
+
+```{r}
+object.size(obj09)
+object.size(obj10)
+object.size(obj11)
+object.size(obj12)
+```
+
+## 10.
+
+```{r}
+vecX <- c(symbols = "a", size = "1", type = "roman")
+expY <- expression(vecY <- c(symbols = "a", size = "1", type = "roman"))
+eval(expY)
+vecX == vecY
+identical(vecX, vecY)
+object.size(vecX)
+object.size(vecY)
+```
+
+## 11.
+
+```{r}
+err <- simpleError("Watch out for this!")
+object.size(err)
+object.size("Watch out for this!")
+attributes(err)
+```
+##12.
+
+```{r}
+is.atomic(err)
+is.recursive(err)
+```
+

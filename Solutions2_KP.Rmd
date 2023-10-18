@@ -1,0 +1,258 @@
+---
+title: "Solutions - Class 2: Objects and classes"
+author: "Koen Plevoets"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = FALSE, echo = TRUE)  # echo = TRUE for Solution
+# Date last modified: "02-10-2023"
+```
+
+```{r initialize}
+library(methods)
+```
+
+&nbsp;
+
+### 1.
+Create the following vectors with the function `rep()` (or its variants described on its help page):
+
+- `3 3 3 3 3` using (only) the arguments `3` and `5`
+
+```{r rep_times, eval = knitr::opts_chunk$get("echo")}
+rep(3, times = 5)
+rep.int(3, times = 5)
+```
+
+- `3 3 1 1 2 2` using (only) the arguments `c(3, 1, 2)` and `2`
+
+```{r rep_each, eval = knitr::opts_chunk$get("echo")}
+rep(c(3, 1, 2), each = 2)
+```
+
+- `3 1 2 3 1` using (only) the arguments `c(3, 1, 2)` and `5`
+
+```{r rep_lengthout, eval = knitr::opts_chunk$get("echo")}
+rep(c(3, 1, 2), length.out = 5)
+rep_len(c(3, 1, 2), length.out = 5)
+```
+
+- `3 3 3 1 2 2` using (only) the arguments `c(3, 1, 2)` and `c(3, 1, 2)`
+
+```{r rep_times_vec, eval = knitr::opts_chunk$get("echo")}
+rep(c(3, 1, 2), times = c(3, 1, 2))
+rep.int(c(3, 1, 2), times = c(3, 1, 2))
+```
+
+&nbsp;
+
+### 2.
+Create the following vectors with the function `seq()` (or its variants described on its help page):
+
+- `1 3 5 7 9`
+
+```{r seq_by, eval = knitr::opts_chunk$get("echo")}
+seq(from = 1, to = 10, by = 2)
+seq.int(from = 1, to = 10, by = 2)
+```
+
+- ` 1.0  5.5 10.0` using an argument `c(3, 2, 1)`
+
+```{r seq_along, eval = knitr::opts_chunk$get("echo")}
+seq(from = 1, to = 10, along.with = c(3, 1, 2))
+```
+
+- ` 1.0  2.5  4.0  5.5  7.0  8.5 10.0` using an argument `7`
+
+```{r seq_length, eval = knitr::opts_chunk$get("echo")}
+seq(from = 1, to = 10, length.out = 7)
+```
+
+- `10  8  6  4  2`
+
+```{r seq_by_neg, eval = knitr::opts_chunk$get("echo")}
+seq(from = 10, to = 1, by = -2)
+seq.int(from = 10, to = 1, by = -2)
+```
+
+&nbsp;
+
+### 3.
+The function `replicate()` is sometimes wrongly used instead of `rep()` to repeat values. Use the function `system.time()` to measure the performance of both functions in repeating the value `3` for a total of `1e6` times.
+
+```{r time_rep, eval = knitr::opts_chunk$get("echo")}
+system.time(rep(3, 1e6))
+system.time(replicate(1e6, 3))
+```
+
+### 4.
+The difference between `integer` and `double`(-precision floating point number) values is the byte size with which R stores them in memory. Byte size is also dependent on the attributes of the object. Use the function `object.size()` to show this for:
+
+- the integer sequence `1:10`
+- the numeric sequence `seq(1, 10, by = 1)`
+- the 5x2 integer matrix `matrix(1:10, nrow = 5)`
+- the 5x2 numeric matrix `matrix(seq(1, 10, by = 1), nrow = 5)`
+- the integer vector `obj05 <- 1:10` of S3 class `humpty`
+- the numeric vector `obj06 <- seq(1, 10, by = 1)` of S3 class `dumpty`
+
+List these six objects in increasing order of byte size in your R code.
+
+```{r size_seq, eval = knitr::opts_chunk$get("echo")}
+# Creation of objects:
+obj01 <- 1:10
+obj02 <- seq(1, 10, by = 1)
+obj03 <- matrix(1:10, nrow = 5)
+obj04 <- matrix(seq(1, 10, by = 1), nrow = 5)
+obj05 <- 1:10
+class(obj05) <- "humpty"
+obj06 <- seq(1, 10, by = 1)
+class(obj06) <- "dumpty"
+
+# Increasing order of byte sizes:
+object.size(obj01)
+object.size(obj02)
+object.size(obj03)
+object.size(obj05)
+object.size(obj04)
+object.size(obj06)
+```
+
+### 5.
+Rank the following objects/vectors according to the byte size. Which result surprises you?
+
+- `rep(c(TRUE, FALSE), 5)`
+- `seq(1, 10, by = 1)`
+- `vector(mode = "logical", length = 10)`
+- `vector(mode = "numeric", length = 10)`
+- `vector(mode = "list", length = 10)`
+- `vector(mode = "character", length = 10)`
+
+```{r size_empty, eval = knitr::opts_chunk$get("echo")}
+object.size(vector(mode = "logical", length = 10))
+# is as big as a "full" logical vector:
+object.size(rep(c(TRUE, FALSE), 5))
+
+object.size(vector(mode = "numeric", length = 10))
+# is as big as a "full" numeric vector:
+object.size(seq(1, 10, by = 1))
+
+# Both are as big as an empty list:
+object.size(vector(mode = "list", length = 10))
+
+# Character vectors are biggest, however::
+object.size(vector(mode = "character", length = 10))
+
+# Since empty vectors, which usually serve to allocate memory to "placeholders",
+# take up as much memory as "full" vectors of the same length and type, your
+# computer never has to re-allocate memory when "filling up" the empty vector.
+# This is computationally efficient, provided you do not change type or length.
+```
+
+### 6.
+Show the difference between `NULL` and `NA` by comparing their byte sizes. What does this say about a `NULL` object having attributes (Answer: read the help page of `NULL)`? Verify it by comparing the byte sizes of two names vectors `obj07 <- c(label = NULL)` and `obj08 <- c(label = NA)`.
+
+```{r size_missing, eval = knitr::opts_chunk$get("echo")}
+object.size(NULL)
+object.size(NA)
+
+obj07 <- c(label = NULL)
+obj08 <- c(label = NA)
+
+object.size(obj07)
+object.size(obj08)
+```
+
+### 7.
+According to [Euler's identity](https://en.wikipedia.org/wiki/Euler%27s_identity):
+
+$$
+\begin{aligned}
+e^{i\pi} &= -1 \\
+e^{i\pi} &= i^2 \\
+ln(e^{i\pi}) &= ln(i^2) \\
+i\pi \, ln(e) &= 2 \, ln(i) \\
+i\pi &= 2 \, ln(i) \\
+\pi &= \frac{2 \, ln(i)}{i}
+\end{aligned}
+$$
+
+Show that the right-hand side (of the last equation) indeed returns the left-hand side as the result in R.
+
+```{r complex, eval = knitr::opts_chunk$get("echo")}
+2 * log(0 + 1i) / (0 + 1i)
+```
+
+### 8.
+Create an S4 class `alphabetS4` and an RC class `alphabetRC`, both with slots/fields `symbols`, `size` and `type`. Instantiate both classes with the 26 letters of the alphabet (in lowercase) as values for `symbols`, the value `26` for `size` and the value `roman` for `type`.
+
+```{r defs_class, eval = knitr::opts_chunk$get("echo")}
+setClass("alphabetS4",
+         slots = c(symbols = "character", size = "numeric",
+                   type = "character"))
+setRefClass("alphabetRC",
+            fields = c(symbols = "character", size = "numeric",
+                       type = "character"))
+obj09 <- new("alphabetS4", symbols = letters, size = length(letters),
+            type = "roman")
+obj10 <- new("alphabetRC", symbols = letters, size = length(letters),
+            type = "roman")
+```
+
+### 9.
+Create a list and and environment with the same components as the class instances of the previous exercise. Rank all four objects on the basis of their byte sizes.
+
+```{r size_rest, eval = knitr::opts_chunk$get("echo")}
+obj11 <- list(symbols = letters, size = length(letters), type = "roman")
+obj12 <- new.env()
+obj12$symbols <- letters
+obj12$size <- length(letters)
+obj12$type <- "roman"
+
+object.size(obj12)  # Environment
+object.size(obj10)  # RC object
+object.size(obj11)  # List
+object.size(obj09)  # S4 object
+
+# However, RC instances or environments can contain elements of a bigger size:
+object.size(obj10$symbols)
+object.size(obj12$symbols)
+```
+
+### 10.
+Create:
+
+- the vector `c(symbols = "a", size = "1", type = "roman")` called `vecX`
+- the expression `vecY <- c(symbols = "a", size = "1", type = "roman")`
+
+Evaluate the expression and verify that `vecX` is identical to the (newly created) object `vecY`. Determine the byte size of the expression.
+
+```{r defs_expression, eval = knitr::opts_chunk$get("echo")}
+vecX <- c(symbols = "a", size = "1", type = "roman")
+expX <- expression(vecY <- c(symbols = "a", size = "1", type = "roman"))
+
+eval(expX)
+
+identical(vecX, vecY)
+
+object.size(expX)
+```
+
+### 11.
+Create a warning object `Watch out for this!` and print its attributes. What do you expect about the byte size of the warning object as compared to the byte size of the simple string `"Watch out for this!"`? Verify your expectation.
+
+```{r defs_warning, eval = knitr::opts_chunk$get("echo")}
+warX <- simpleWarning("Watch out for this!")
+attributes(warX)
+
+object.size("Watch out for this!")
+object.size(warX)
+```
+
+### 12.
+Are condition objects such as errors or warnings recursive or atomic? You can use the warning object of the previous exercise to determine this.
+
+```{r struc_warning, eval = knitr::opts_chunk$get("echo")}
+is.atomic(warX)
+is.recursive(warX)
+```

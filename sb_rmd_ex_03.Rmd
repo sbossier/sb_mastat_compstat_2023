@@ -1,0 +1,17 @@
+---
+title: "Exercises - Class 3: Vectors"
+author: "Sander Bossier"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1.
+Create a 13x2 matrix `mat1` with the elements of the (built-in) vector `letters`in row-major order.
+
+```{r}
+
+```
