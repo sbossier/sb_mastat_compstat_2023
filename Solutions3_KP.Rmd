@@ -1,0 +1,245 @@
+---
+title: "Exercises - Class 3: Vectors"
+author: "Koen Plevoets"
+date: "09-10-2023"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE,
+                      echo = FALSE)  # echo = TRUE for Solution
+```
+
+```{r initialize}
+library(microbenchmark)
+```
+
+&nbsp;
+
+### 1.
+Create a 13x2 matrix `mat1` with the elements of the (built-in) vector `letters` in row-major order.
+
+```{r rowMajor}
+# Solution:
+mat1 <- matrix(letters, nrow = 13, ncol = 2, byrow = TRUE)
+mat1
+```
+
+### 2.
+Create another 13x2 matrix `mat2` with the elements of `letters` in column-major order. How can you transform `mat2` in order to make it identical to `mat1` (from the previous exercise)?
+
+```{r columnMajor, eval = knitr::opts_chunk$get("echo")}
+# Solution:
+mat2 <- matrix(letters, nrow = 13, ncol = 2)
+
+identical(mat1, t(matrix(mat2, nrow = 2, ncol = 13)))
+```
+
+### 3.
+Extract the 2nd column from `mat1` as a 13x1 matrix, not a vector. Do this for three different ways of indexing:
+
+- positive integers
+- negative integers
+- logical vector
+
+```{r drop, eval = knitr::opts_chunk$get("echo")}
+# Solution:
+mat1[, 2, drop = FALSE]
+mat1[, -1, drop = FALSE]
+mat1[, c(FALSE, TRUE), drop = FALSE]
+```
+
+### 4.
+Compare the computation time of the three indexing operations from the previous exercise. You can use R's core function for timing but you will find the **microbenchmark** package more informative.
+
+```{r time_drop, eval = knitr::opts_chunk$get("echo")}
+# Solution:
+system.time(mat1[, 2, drop = FALSE])
+system.time(mat1[, -1, drop = FALSE])
+system.time(mat1[, c(FALSE, TRUE), drop = FALSE])
+
+microbenchmark(mat1[, 2, drop = FALSE])
+microbenchmark(mat1[, -1, drop = FALSE])
+microbenchmark(mat1[, c(FALSE, TRUE), drop = FALSE])
+```
+
+### 5.
+Extract the five vowels from `mat1` using:
+
+- a single index vector
+- an index matrix
+
+Again, time the computations of both operations.
+
+```{r time_vowels, eval = knitr::opts_chunk$get("echo")}
+# Solution:
+system.time(mat1[c(1, 3, 5, 8, 11)])
+system.time(mat1[rbind(c(1, 1), c(3, 1), c(5, 1), c(8, 1), c(11, 1))])
+
+microbenchmark(mat1[c(1, 3, 5, 8, 11)],
+               unit = "ns")
+microbenchmark(mat1[rbind(c(1, 1), c(3, 1), c(5, 1), c(8, 1), c(11, 1))],
+               unit = "ns")
+# But:
+microbenchmark(mat1[cbind(c(1, 3, 5, 8, 11), 1)],
+               unit = "ns")
+```
+
+### 6.
+What is the most efficient way to raise the first element of the following vector to the power `1`, the second element to the power `2` etc. and the last element to the power `10` (you can copy-paste the following code):
+
+```{r show_vectorized, echo = TRUE}
+vec1 <- 10:1
+vec1
+```
+
+In other words, your result should be:
+
+```{r vectorized}
+# Solution:
+vec1^(1:10)
+```
+
+### 7.
+What is the most efficient way to raise the first element of the vector `vec1` (from the previous exercise) to the power `3`, the second element to the power `2`, the third element again to the power `3`, the fourth element again to the power `2` etc. up until the one-but-last element to the power `3` and the last element to the power `2`? In other words, your result should be:
+
+```{r recycling}
+# Solution:
+vec1^c(3, 2)
+```
+
+### 8.
+Consider the following matrix (you can copy-paste the code):
+
+```{r show_recycling2, echo = TRUE}
+mat3 <- matrix(seq(30, 270, by = 30), nrow = 3, ncol = 3)
+mat3
+```
+
+How can you divide each row of `mat3` by the vector `c(2, 3, 5)` *without* using the the meta-function `sweep()`? Same question for dividing each column of `mat3` by `c(2, 3, 5)`, so your results should be:
+
+```{r recycling2}
+# Solution:
+mat3 / c(2, 3, 5)
+t(t(mat3) / c(2, 3, 5))
+```
+
+```{r comp_recycling2, eval = knitr::opts_chunk$get("echo")}
+# Compare:
+sweep(mat3, 1, c(2, 3, 5), "/")
+sweep(mat3, 2, c(2, 3, 5), "/")
+```
+
+### 9.
+Use a meta-function to generate all possible sums of the sides of two dice. The sides of one die can be represented as a vector (you can copy-paste the code):
+
+```{r show_dice, echo = TRUE}
+vec2 <- 1:6
+vec2
+```
+
+Your result should be:
+
+```{r dice}
+# Solution:
+outer(vec2, vec2, "+")
+```
+
+### 10.
+The matrix from the previous exercise can be converted to a vector. There is another meta-function which allows you to compute the vector of all (36) sums of the sides of two dice. Compare the computation times of both commands.
+
+```{r time_dice, eval = knitr::opts_chunk$get("echo")}
+# Solution:
+system.time(
+  as.vector(outer(vec2, vec2, "+"))
+)
+system.time(
+  apply(expand.grid(list(vec2, vec2)), 1, sum)
+)
+
+microbenchmark(
+  as.vector(outer(vec2, vec2, "+"))
+)
+microbenchmark(
+  apply(expand.grid(list(vec2, vec2)), 1, sum)
+)
+```
+
+### 11.
+Compare the computation time of R's core `cumsum()` function with `Reduce( . , accumulate = TRUE)`. Do this on this `vec3` (you can copy-paste the code):
+
+```{r show_csum, echo = TRUE}
+set.seed(123)
+vec3 <- sample(vec1, size = 100, replace = TRUE)
+head(vec3, n = 10)
+tail(vec3, n = 10)
+```
+
+```{r time_csum, eval = knitr::opts_chunk$get("echo")}
+# Solution:
+system.time(
+  cumsum(vec3)
+  )
+system.time(
+  Reduce("+", vec3, accumulate = TRUE)
+  )
+
+microbenchmark(
+  cumsum(vec3), 
+  unit = "ns"
+  )
+microbenchmark(
+  Reduce("+", vec3, accumulate = TRUE),
+  unit = "ns"
+  )
+```
+
+### 12.
+Compare the computation times of three ways to sum every two consecutive elements in vector `vec3` (from the previous exercise):
+
+- a `for` loop
+- the `vapply()` meta-function
+- another meta-function of the apply family, closely related to `vapply()`
+
+In other words, the first element of your result `r vec3[1] + vec3[2]` should the sum of the first two elements `r vec3[1]` and `r vec3[2]` in `vec3`, the second element of the result `r vec3[2]  + vec3[3]` should be the sum of the second element `r vec3[2]` and third element `r vec3[3]`, the third element of the result `r vec3[3] + vec3[4]` needs to be the sum of the third element `r vec3[3]` and fourth element `r vec3[4]` in `vec3`, and so on:
+
+```{r show_twos, echo = FALSE}
+vapply(seq_len(length(vec3) - 1), function(i) sum(vec3[i:(i + 1)]), numeric(1))
+```
+
+This exercise assumes some basic familiarity with creating functions in R.
+
+```{r time_twos, eval = knitr::opts_chunk$get("echo")}
+# Solution:
+system.time( {
+  len <- length(vec3) - 1
+  out <- numeric(len)
+  for (i in seq_len(len)) {
+    out[i] <- sum(vec3[i:(i + 1)])
+  }
+  out
+  }
+)
+system.time(
+ vapply(seq_len(length(vec3) - 1), function(i) sum(vec3[i:(i + 1)]), numeric(1)) 
+)
+system.time(
+ sapply(seq_len(length(vec3) - 1), function(i) sum(vec3[i:(i + 1)])) 
+)
+
+microbenchmark( {
+  len <- length(vec3) - 1
+  out <- numeric(len)
+  for (i in seq_len(len)) {
+    out[i] <- sum(vec3[i:(i + 1)])
+    }
+  out
+  },
+  unit = "us")
+microbenchmark(
+ vapply(seq_len(length(vec3) - 1), function(i) sum(vec3[i:(i + 1)]), numeric(1)),
+ unit = "us")
+microbenchmark(
+ sapply(seq_len(length(vec3) - 1), function(i) sum(vec3[i:(i + 1)])),
+ unit = "us")
+```

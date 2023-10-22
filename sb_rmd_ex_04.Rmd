@@ -1,0 +1,240 @@
+---
+title: "Exercises - Class 4: Functions"
+author: "Sander Bossier"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1.
+
+Harmonic numbers are sums of the reciprocals of the positive integers. More specifically, the n’th harmonic number is:
+$$\sum_{i=1}^{n} \frac{1}{i}$$
+Create a function `Harmonic(n)` which computes the nth harmonic number. The body of this function can consist of a single line. An example is:
+```{r}
+Harmonic <- function(n) sum(1 / (1:n))
+
+Harmonic(5)
+```
+
+## 2.
+
+Harmonic numbers are recursive:
+$$H_{n} = H_{n-1} + \frac{1}{n}$$
+Write a recursive function rHarmonic(n) which computes the nth harmonic number recursively (in other words, the result should be the same as in the previous exercise).
+
+```{r}
+rHarmonic <- function(n) {
+  if (n == 1) {
+    1
+  }
+  else{
+    rHarmonic(n - 1) + (1 / n)
+  }
+}
+rHarmonic(5)
+```
+
+## 3.
+
+Compare the computation time of `Harmonic(n)` and `rHarmonic(n)` for the 1000th harmonic number (using
+R’s core timing function).
+
+```{r}
+system.time(
+  Harmonic(1000)
+)
+system.time(
+  rHarmonic(1000)
+)
+system.time(
+  Harmonic(1e6)
+)
+
+```
+
+## 4.
+
+Create a binary infix operator __`%fill%`__ which replaces all __`NA`__ values in the vector on the left-hand side by the value specified on the right-hand side.
+
+```{r}
+`%fill%` <- function(vec, value) {
+  vec[is.na(vec)] <- value # or
+  #replace(vec, is.na(vec1), value)
+  vec
+}
+
+vec1 <- c(5, 55, NA, -9, -99, NA, NA, -5, -9, 999)
+vec2 <- vec1 %fill% 0
+vec2
+```
+
+## 5.
+
+Create a replacement function fill() which replaces all NA values in a vector by the value specified on the right-hand side.
+
+```{r}
+`fill<-` <- function(vec, value) {
+  vec[is.na(vec)] <- value
+  vec
+}
+
+vec1 <- c(5, 55, NA, -9, -99, NA, NA, -5, -9, 999)
+fill(vec1) <- 0
+vec1
+```
+
+## 6.
+
+Compare the computation time of the %fill% operator and the fill() replacement function on the following large vector (you can copy-paste these two lines):
+
+```{r}
+library(microbenchmark)
+set.seed(123)
+vec3 <- sample(c(5, -9, NA), size = 1e6, replace = TRUE)
+```
+
+Do this using both R’s core function and the package microbenchmark (replace the NA’s by 0).
+
+```{r}
+system.time(
+  tmp <- vec3 %fill% 0
+)
+system.time(
+  fill(vec3) <- 0
+)
+
+microbenchmark(
+  tmp <- vec3 %fill% 0,
+  unit = "us"
+)
+microbenchmark(
+  fill(vec3) <- 0,
+  unit = "us"
+)
+```
+
+## 7.
+
+Create two functions __`full1()`__ and __`full2()`__ which both extract the non-NA elements from a vector. One of both functions needs to make use of the functional `Filter()` (see last week). Compare their computation times on the `vec3` object from the previous exercises. You can use both R’s core function and the __microbenchmark__ package but for the latter you can specify a number of `times` <= 100.
+
+Note: There is even a way to combine the `Filter()` function with the `Negate()` function. If you manage to find that one, then you can compare all three functions.
+
+```{r}
+full1 <- function(vec) {
+  vec[!is.na(vec)]
+}
+
+full2 <- function(vec) {
+  Filter(function(x) !is.na(x), vec)
+}
+
+full3 <- function(vec) {
+  Filter(Negate(function(x) is.na(x)), vec)
+}
+```
+
+```{r}
+vec1 <- c(5, 55, NA, -9, -99, NA, NA, -5, -9, 999)
+microbenchmark(
+  full1(vec3),
+  full2(vec3),
+  full3(vec3),
+  times = 100,
+  unit = "ns"
+)
+```
+
+## 8.
+
+One of the features of R’s syntax is that a function name before the opening bracket __`(`__ can actually be a variable. This allows uses such as the following:
+
+```{r}
+f <- sum
+f(vec2)
+
+f <- mean
+f(vec2)
+```
+
+Create a function `twofun()` which has two formal  arguments:
+
+* `x` which can be a numeric vector
+* `fun` which can be any function computing some descriptive statistic
+
+The function `twofun()` should apply the function specified as `fun` to every two consecutive elements in the vector specified as `x`. In other words, if `fun = sum` then `twofun()` will compute the sum of every two consecutive elements in `x` like we have seen last week (see the last exercise of the previous week). However, `twofun()` allows for more flexibility:
+
+```{r}
+twofun <- function(vec, fun = sum) {
+  vapply(
+    seq_len(length(vec) - 1),
+    FUN = function(i) fun(vec[i:(i + 1)]),
+    numeric(1)
+  )
+}
+```
+
+```{r}
+twofun(vec1, fun = sum)
+twofun(vec1, fun = mean)
+twofun(vec1, fun = median)
+twofun(vec1, fun = var)
+twofun(vec1)
+```
+
+## 9.
+
+R’s functions for descriptive statistics have an argument `na.rm` and `var()` even has an argument `use`. Rewrite the `twosum()` function so that it can handle all of these extra arguments without any conflict.
+
+```{r}
+twofun <- function(vec, fun = sum, ...) {
+  
+  vapply(
+    X = seq_len(length(vec) - 1),
+    FUN = function(i) fun(vec[i:(i + 1)], ...),
+    FUN.VALUE = numeric(1)
+  )
+}
+```
+
+
+## 10.
+
+
+
+```{r}
+twofunfun <- function(fun = sum) {
+  out <- function(vec, ...) {
+    vapply(
+      X = seq_len(length(vec) - 1),
+      FUN = function(i) fun(vec[i:(i + 1)], ...),
+      FUN.VALUE = numeric(1)
+    )
+  }
+  out
+}
+```
+
+```{r}
+twomean <- twofunfun(fun = mean)
+twomean(vec1)
+
+twovar <- twofunfun(fun = var)
+twovar(vec1)
+```
+
+```{r}
+environment(twomean)
+environment(twovar)
+```
+
+```{r}
+exists("fun", environment(twomean))
+get("fun", environment(twomean))
+exists("fun", environment(twovar))
+get("fun", environment(twovar))
+```
+

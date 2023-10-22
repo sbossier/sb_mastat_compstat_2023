@@ -13,5 +13,193 @@ knitr::opts_chunk$set(echo = TRUE)
 Create a 13x2 matrix `mat1` with the elements of the (built-in) vector `letters`in row-major order.
 
 ```{r}
-
+mat1 <- matrix(data = letters, ncol = 2, byrow = TRUE)
+mat1
 ```
+
+## 2.
+
+Create another 13x2 matrix mat2 with the elements of letters in column-major order. How can you
+transform mat2 in order to make it identical to mat1 (from the previous exercise)?
+
+```{r}
+mat2 <- matrix(data = letters, nrow = 13)
+mat2
+
+identical(mat1, t(matrix(mat2, nrow = 2, ncol = 13)))
+```
+
+## 3.
+
+Extract the 2nd column from mat1 as a 13x1 matrix, not a vector. Do this for three different ways of indexing:
+* positive integers
+* negative integers
+* logical vector
+
+```{r drop}
+mat1[,2, drop = FALSE]
+mat1[,-1, drop = FALSE]
+mat1[,c(FALSE, TRUE), drop = FALSE]
+```
+
+## 4.
+
+Compare the computation time of the three indexing operations from the previous exercise. You can use R’s
+core function for timing but you will find the microbenchmark package more informative.
+
+```{r}
+library(microbenchmark)
+exp1 <- expression(mat1[,2, drop = FALSE])
+exp2 <- expression(mat1[,-1, drop = FALSE])
+exp3 <- expression(mat1[,c(FALSE, TRUE), drop = FALSE])
+microbenchmark(exp1, exp2, exp3)
+```
+
+## 5.
+
+Extract the five vowels from mat1 using:
+
+* a single index vector
+* an index matrix
+
+Again, time the computations of both operations.
+
+```{r}
+microbenchmark(
+  mat1[c(1, 3, 5, 8, 11)],
+  mat1[rbind(c(1, 1), c(3, 1), c(5, 1), c(8, 1), c(11, 1))], unit = "ns"
+)
+```
+
+## 6.
+
+What is the most efficient way to raise the first element of the following vector to the power 1, the second element to the power 2 etc. and the last element to the power 10 (you can copy-paste the following code):
+
+```{r}
+vec1 <- 10:1
+vec1
+```
+
+```{r}
+vec1^(1:10)
+```
+
+## 7.
+
+What is the most efficient way to raise the first element of the vector vec1 (from the previous exercise) to the power 3, the second element to the power 2, the third element again to the power 3, the fourth element
+again to the power 2 etc. up until the one-but-last element to the power 3 and the last element to the power
+2? In other words, your result should be:
+[1] 1000 81 512 49 216 25 64 9 8 1
+
+```{r}
+vec1^rep(c(3,2), times = 5)
+vec1^c(3,2)
+```
+The first elements of the shorter vector are consecutively copied to the end of the vector until its length matches that of the longer vector. __But__ R raises a warning about this only when the length of the shorter vector is not a multiple of the length of the longer vector.
+
+## 8.
+
+Consider the following matrix (you can copy-paste the code):
+```{r}
+mat3 <- matrix(seq(30, 270, by = 30), nrow = 3, ncol = 3)
+mat3
+```
+
+```{r}
+mat3/c(2,3,5)
+mat3/rep(c(2,3,5), each = 3)
+t(t(mat3)/c(2,3,5))
+```
+```{r}
+sweep(x = mat3, MARGIN = 1, STATS = c(2, 3, 5), FUN = "/")
+sweep(x = mat3, MARGIN = 2, STATS = c(2, 3, 5), FUN = "/")
+```
+
+## 9.
+
+Use a meta-function to generate all possible sums of the sides of two dice. The sides of one die can be
+represented as a vector (you can copy-paste the code):
+
+```{r}
+vec2 <- 1:6
+vec2
+```
+
+```{r}
+outer(vec2, vec2, FUN = "+")
+```
+
+## 10.
+
+The matrix from the previous exercise can be converted to a vector. There is another meta-function which allows you to compute the vector of all (36) sums of the sides of two dice. Compare the computation times
+of both commands.
+
+```{r}
+vec3 <- as.vector(outer(vec2, vec2, FUN = "+"))
+vec3
+microbenchmark(as.vector(outer(vec2, vec2, FUN = "+")), unit = "ns")
+microbenchmark(apply(expand.grid(vec2, vec2), MARGIN = 1, FUN = sum), unit = "ns")
+```
+
+## 11.
+
+Compare the computation time of R’s core `cumsum()` function with `Reduce( . , accumulate = TRUE)`. Do
+this on this vec3 (you can copy-paste the code):
+
+```{r}
+set.seed(123)
+vec3 <- sample(vec1, size = 100, replace = TRUE)
+head(vec3, n = 10)
+tail(vec3, n = 10)
+```
+
+```{r}
+microbenchmark(cumsum(vec3), times = 100, unit = "ns")
+microbenchmark(Reduce(f = "+", x = vec3, accumulate = TRUE), times = 100, unit = "ns")
+```
+
+## 12.
+
+Compare the computation times of three ways to sum every two consecutive elements in vector `vec3` (from
+the previous exercise):
+
+* a for loop
+* the vapply() meta-function
+* another meta-function of the apply family, closely related to vapply()
+
+In other words, the first element of your result 16 should the sum of the first two elements 8 and 8 in `vec3`, the second element of the result 9 should be the sum of the second element 8 and third element 1, the third element of the result 10 needs to be the sum of the third element 1 and fourth element 9 in vec3, and so on:
+
+## [1] 16 9 10 14 11 13 12 7 3 7 14 10 4 4 10 11 4 5 5 3 10 15 17 14 10
+
+## [26] 7 5 6 4 3 5 10 10 10 11 7 11 15 9 12 19 12 4 7 11 8 3 8 12 8
+
+## [51] 8 10 9 14 15 14 19 19 16 13 11 13 10 9 12 7 4 6 12 11 5 10 12 12 12
+
+## [76] 9 6 7 12 9 11 9 10 10 10 10 6 12 17 15 13 11 11 11 13 14 8 8 5
+
+This exercise assumes some basic familiarity with creating functions in R.
+
+```{r}
+consecsumloop <- function(vec) {
+  result <- numeric(length(vec) - 1)
+  for (i in 1:(length(vec) - 1)) {
+    result[i] <- vec[i] + vec[i+1]
+  }
+  result
+}
+```
+
+```{r}
+microbenchmark({result <- numeric(length(vec3) - 1)
+  for (i in 1:(length(vec3) - 1)) {
+    result[i] <- vec3[i] + vec3[i+1]
+  }
+  result}, unit = "us")
+microbenchmark(
+  vapply(seq_len(length(vec3) - 1), FUN = function(i) sum(vec3[i:(i + 1)]), numeric(1)), unit = "us"
+)
+microbenchmark(
+  sapply(seq_len(length(vec3) - 1), function(i) sum(vec3[i:(i + 1)])), unit = "us"
+)
+```
+

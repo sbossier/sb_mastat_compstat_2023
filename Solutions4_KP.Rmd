@@ -1,0 +1,381 @@
+---
+title: "Exercises - Class 4: Functions"
+author: "Koen Plevoets"
+date: "11-10-2023"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE,
+                      echo = FALSE)  # echo = TRUE for Solution
+```
+
+```{r initialize}
+library(methods)
+library(microbenchmark)
+```
+
+&nbsp;
+
+### 1.
+[Harmonic numbers](https://en.wikipedia.org/wiki/Harmonic_number) are sums of the reciprocals of the positive integers. More specifically, the _n_'th harmonic number is:
+
+$$
+H_n = \sum_{i=1}^n \frac{1}{i}
+$$
+Create a function `Harmonic(n)` which computes the `n`th harmonic number. The body of this function can consist of a single line. An example is:
+
+```{r Harmonic}
+# Solution:
+Harmonic <- function(n) sum(1 / (1:n))
+```
+
+```{r show_Harmonic, echo = TRUE}
+Harmonic(5)
+```
+
+### 2.
+Harmonic numbers are recursive:
+
+$$
+H_n = H_{n - 1} + \frac{1}{n}
+$$
+
+Write a recursive function `rHarmonic(n)` which computes the `n`th harmonic number recursively (in other words, the result should be the same as in the previous exercise).
+
+```{r rHarmonic}
+# Solution:
+rHarmonic <- function(n) {
+  if (n == 1) {
+    1
+  } else {
+    rHarmonic(n - 1) + (1 / n)
+  }
+}
+```
+
+```{r show_rHarmonic, eval = knitr::opts_chunk$get("echo")}
+rHarmonic(5)
+```
+
+### 3.
+Compare the computation time of `Harmonic(n)` and `rHarmonic(n)` for the 1000th harmonic number (using R's core timing function).
+
+```{r time_harmonic, eval = knitr::opts_chunk$get("echo"), error = TRUE}
+# Solution:
+n <- 1000
+system.time(Harmonic(n))
+system.time(rHarmonic(n))
+
+# But:
+n <- 1e6
+system.time(Harmonic(n))
+system.time(rHarmonic(n))
+```
+
+### 4.
+Create a binary infix operator `%fill%` which replaces all `NA` values in the vector on the left-hand side by the value specified on the right-hand side. In other words, the function should work as follows:
+
+```{r binary_fill}
+# Solution:
+`%fill%` <- function(x, y) {
+  x[is.na(x)] <- y
+  x
+}
+```
+
+```{r binary_show, echo = TRUE}
+vec1 <- c(5, 55, NA, -9, -99, NA, NA, -5, -9, 999)
+vec2 <- vec1 %fill% 0
+vec2
+```
+
+### 5.
+Create a replacement function `fill()` which replaces all `NA` values in a vector by the value specified on the right-hand side. In other words, the function should work as follows:
+
+```{r replace_fill}
+# Solution:
+`fill<-` <- function(x, value) {
+  x[is.na(x)] <- value
+  x
+}
+```
+
+```{r replace_show, echo = TRUE}
+vec1 <- c(5, 55, NA, -9, -99, NA, NA, -5, -9, 999)
+fill(vec1) <- 0
+vec1
+```
+
+### 6.
+Compare the computation time of the `%fill%` operator and the `fill()` replacement function on the following large vector (you can copy-paste these two lines):
+
+```{r show_specials, echo = TRUE}
+set.seed(123)
+vec3 <- sample(c(5, -9, NA), size = 1e6, replace = TRUE)
+```
+
+Do this using both R's core function and the package **microbenchmark** (replace the `NA`'s by `0`). 
+
+```{r time_specials, eval = knitr::opts_chunk$get("echo"), cache = TRUE}
+# Solution:
+system.time(tmp <- vec3 %fill% 0)
+system.time(fill(vec3) <- 0)
+
+microbenchmark(tmp <- vec3 %fill% 0)
+microbenchmark(fill(vec3) <- 0)
+```
+
+### 7.
+Create two functions `full1()` and `full2()` which both extract the non-`NA` elements from a vector. One of both functions needs to make use of the functional `Filter()` (see last week). Compare their computations times on the `vec3` object from the previous exercises. You can use both R's core function and the **microbenchmark** package but for the latter you can specify a number of `times` <= 100.
+
+**Note**: There is even a way to combine the `Filter()` function with the `Negate()` function. If you manage to find that one, then you can compare all three functions.
+
+```{r defs_full}
+# Solution, 1 / 2:
+full1 <- function(x) {
+  x[!is.na(x)]
+}
+full2 <- function(x) {
+  Filter(function(y) !is.na(y), x)
+}
+full3 <- function(x) {
+  Filter(Negate(is.na), x)
+}
+```
+
+```{r demo_full, echo = TRUE}
+vec1 <- c(5, 55, NA, -9, -99, NA, NA, -5, -9, 999)
+full1(vec1)
+full2(vec1)
+```
+
+```{r demo_neg3, eval = knitr::opts_chunk$get("echo")}
+full3(vec1)
+```
+
+```{r time_full, eval = knitr::opts_chunk$get("echo"), cache = TRUE}
+# Solution, 2 / 2:
+system.time(full1(vec3))
+system.time(full2(vec3))
+system.time(full3(vec3))
+
+microbenchmark(full1(vec3))
+microbenchmark(full2(vec3))
+microbenchmark(full3(vec3))
+```
+
+### 8.
+One of the features of R's syntax is that a function name before the opening bracket `(` can actually be a variable. This allows uses such as the following:
+
+```{r demo_varf, echo = TRUE}
+f <- sum
+f(vec2)
+f <- mean
+f(vec2)
+f <- sd
+f(vec2)
+
+# Etc.
+```
+
+Create a function `twofun()` which has two formal arguments:
+
+- `x` which can be a numeric vector
+- `fun` which can be any function computing some descriptive statistic
+
+The function `twofun()` should apply the function specified as `fun` to every two consecutive elements in the vector specified as `x`. In other words, if `fun = sum` then `twofun()` will compute the sum of every two consecutive elements in `x` like we have seen last week (see the last exercise of the previous week). However, `twofun()` allows for more flexibility:
+
+```{r defs_varf}
+# Solution:
+twofun <- function(x, fun = sum) {
+  vapply(seq_len(length(x) - 1),
+         function(i) fun(x[i:(i + 1)]),
+         numeric(1))
+}
+```
+
+```{r demo_varfs, echo = TRUE}
+twofun(vec1, fun = sum)
+twofun(vec1, fun = mean)
+twofun(vec1, fun = median)
+twofun(vec1, fun = var)
+
+# Etc.
+```
+
+Make sure that the function computes the sum by default:
+
+```{r demo_varfs2, echo = TRUE}
+twofun(vec1)
+```
+
+### 9.
+R's functions for descriptive statistics have an argument `na.rm` and `var()` even has an argument `use`. Rewrite the `twosum()` function so that it can handle all of these extra arguments without any conflict.
+
+```{r defs_ellipsis}
+# Solution:
+twofun2 <- function(x, fun = sum, ...) {
+  vapply(seq_len(length(x) - 1),
+         function(i) fun(x[i:(i + 1)], ...),
+         numeric(1))
+}
+```
+
+### 10.
+User-defined functions in R have the type `closure` because they can be defined within another function (see the [Wikipedia page on closures](https://en.wikipedia.org/wiki/Closure_(computer_programming)) but a better description can be found in [chapter 10 of Hadley Wickham's _Advanced R_](https://adv-r.hadley.nz/function-factories.html)). Create a function `twofunfun()` which takes a statistical function as its single argument `fun` and which *returns another function* which applies `fun` to the two consecutive elements of any vector (i.e. like in the previous two exercises). In other words, `twofunfun()` should work as follows:
+
+```{r defs_closure}
+# Solution, 1 / 2:
+twofunfun <- function(fun = sum) {
+  out <- function(x, ...) {
+    vapply(seq_len(length(x) - 1),
+           function(i) fun(x[i:(i + 1)], ...),
+           numeric(1))
+  }
+  out
+}
+```
+
+```{r demo_closure, echo = TRUE}
+twomean <- twofunfun(fun = mean)
+twomean(vec1)
+twovar <- twofunfun(fun = var)
+twovar(vec1)
+
+# Etc.
+```
+
+Because closures such as `twomean()` and/or `twovar()` are created within `twofunfun()`, they have the (temporary) execution environment of the latter as their environment:
+
+```{r show_closure, echo = TRUE}
+# Random memory location (so your environment name may be different):
+environment(twomean)
+# Random memory location (so your environment name may be different):
+environment(twovar)
+```
+
+Such execution environments contain the values of the formal arguments (see slide 26) and that is why these environments should contain the value for the object `fun`. Show that this is indeed the case and get those values.
+
+```{r local_variable, eval = knitr::opts_chunk$get("echo")}
+# Solution, 2 / 2:
+exists("fun", environment(twomean))
+get("fun", environment(twomean))
+exists("fun", environment(twovar))
+get("fun", environment(twovar))
+```
+
+### 11.
+Write an S3 method `freqs()` which counts how often every element appears in a vector. It should work for the S3 class `text` which is simply an extension of character vectors:
+
+```{r init_S3, echo = TRUE}
+vec4 <- c("a", "rose", "is", "a", "rose", "is", "a", "rose")
+class(vec4) <- "text"
+```
+
+To be precise, the method `freqs()` should work as follows:
+
+```{r defs_S3}
+# Solution:
+freqs <- function(x, ...) UseMethod("freqs")
+freqs.text <- function(x) vapply(unique(x),
+                                 function(j) sum(x == j),
+                                 numeric(1))
+```
+
+```{r demo_S3, echo = TRUE}
+freqs(vec4)
+```
+
+### 12.
+Write a similar method `count()` for the S4 class `txt4` as well one as for the RC class `txtR` (we need to use different class and method names because otherwise R will mix them up; it is standard practice to choose just one OOP system and stick to it throughout your project).
+
+```{r defs_Salt, results = "hide"}
+# Solution:
+setClass("txt4", contains = "character")
+setGeneric("count", function(x) standardGeneric("count"))
+setMethod("count", "txt4", function(x) {
+  vapply(unique(x),
+         function(j) sum(x == j),
+         numeric(1))
+  })
+
+setRefClass("txtR", fields = c(x = "character"),
+            methods = list(count = function() {
+              vapply(unique(x),
+                     function(j) sum(x == j),
+                     numeric(1))
+            }))
+```
+
+```{r show_Salt, echo = TRUE}
+vec5 <- new("txt4", c("a", "rose", "is", "a", "rose", "is", "a", "rose"))
+count(vec5)
+
+vec6 <- new("txtR", x = c("a", "rose", "is", "a", "rose", "is", "a", "rose"))
+vec6$count()
+```
+
+### 13.
+Compare the computation time of the three methods with the computation time of simply using the `table()` function (which you might already have used in your methods but that is okay: in that case you will actually measure the computation time of the method dispatch). Do this comparison on a vector of a million randomly sampled letters from the (Roman) alphabet:
+
+```{r show_data, echo = TRUE}
+set.seed(123)
+vec7 <- sample(letters, 1e6, replace = TRUE)
+
+vec8 <- new("txt4", vec7)
+vec9 <- new("txtR", x = vec7)
+class(vec7) <- "text"
+```
+
+```{r time_data, eval = knitr::opts_chunk$get("echo"), cache = TRUE}
+# Solution:
+system.time(table(vec7, dnn = NULL))
+system.time(freqs(vec7))
+system.time(count(vec8))
+system.time(vec9$count())
+
+microbenchmark(table(vec7, dnn = NULL))
+microbenchmark(freqs(vec7))
+microbenchmark(count(vec8))
+microbenchmark(vec9$count())
+```
+
+### 14.
+A simple linear regression model estimates an **intercept** and a **slope** parameter of a regression line with which one variable can be explained/predicted in terms of another variable. For instance, the core R dataset `cars` has two variables _speed (mph)_ and _stopping distance (ft)_ and the second variable can be predicted/explained in terms of the first variable using the following intercept and slope parameters (estimated on the basis of 50 observations):
+
+```{r init_scoping, echo = TRUE}
+linmod <- lm(dist ~ speed, data = cars)
+linmod
+```
+
+In other words, this linear regression model essentially states (using more digits for both parameters):
+
+$$
+dist = `r coef(linmod)[1]` + `r coef(linmod)[2]` \, \times \, speed
+$$
+
+This means that particular **predictions** for _stopping distance (ft)_ can be obtained by specifying certain values for _speed (mph)_ and plugging them into the equation of the linear regression model. Say, we would like the predicted values of _stopping distance (ft)_ for the _speed (mph)_ values _5_, _6_ and _7_. Modify the following two functions in order to obtain the proper result instead of the error message:
+
+```{r demo_scoping, echo = TRUE, error = TRUE}
+parameters <- function(mod) {
+  coefs <- coefficients(mod)
+}
+predictions <- function(x, mod) {
+  parameters(mod)
+  coefs[1] + coefs[2] * x
+}
+predictions(x = 5:7, mod = linmod)
+```
+
+```{r scoping, eval = knitr::opts_chunk$get("echo")}
+# Solution:
+parameters <- function(mod) {
+  coefficients(mod)    # No assignment is needed here
+}
+predictions <- function(x, mod) {
+  coefs <- parameters(mod)    # R's scoping rules require assignment here
+  coefs[1] + coefs[2] * x
+}
+predictions(x = 5:7, mod = linmod)
+```
