@@ -203,7 +203,7 @@ twofun <- function(vec, fun = sum, ...) {
 
 ## 10.
 
-
+User-defined functions in R have the type `closure` because they can be defined within another function (see the Wikipedia page on closures but a better description can be found in chapter 10 of Hadley Wickham’s _Advanced R_). Create a function `twofunfun()` which takes a statistical function as its single argument `fun` and which _returns another function_ which applies `fun` to the two consecutive elements of any vector (i.e. like in the previous two exercises).
 
 ```{r}
 twofunfun <- function(fun = sum) {
@@ -226,10 +226,14 @@ twovar <- twofunfun(fun = var)
 twovar(vec1)
 ```
 
+Because closures such as `twomean()` and/or `twovar()` are created within `twofunfun()`, they have the (temporary) execution environment of the latter as their environment:
+
 ```{r}
 environment(twomean)
 environment(twovar)
 ```
+
+Such execution environments contain the values of the formal arguments (see slide 26) and that is why these environments should contain the value for the object `fun`. Show that this is indeed the case and get those values.
 
 ```{r}
 exists("fun", environment(twomean))
@@ -238,3 +242,136 @@ exists("fun", environment(twovar))
 get("fun", environment(twovar))
 ```
 
+## 11.
+
+Write an S3 method `freqs()` which counts how often every element appears in a vector. It should work for the S3 class `text` which is simply an extension of character vectors:
+
+```{r}
+freqs <- function(x, ...) {
+  UseMethod("freqs")
+}
+
+freqs.text <- function(vec) {
+  table(vec, useNA = "ifany")
+}
+```
+
+```{r}
+freqskp <- function(x, ...) UseMethod("freqs")
+freqskp.text <- function(x) vapply(unique(x),
+                                 function(j) sum(x == j),
+                                 numeric(1))
+```
+
+
+```{r}
+vec4 <- c("a", "rose", "is", "a", "rose", "is", "a", "rose")
+class(vec4) <- "text"
+freqs(vec4)
+```
+```{r}
+freqskp(vec4)
+```
+
+```{r}
+microbenchmark(freqs(vec4),
+               freqskp(vec4),
+               unit = "ns")
+```
+
+## 12.
+
+Write a similar method `count()` for the S4 class `txt4` as well one as for the RC class `txtR` (we need to use different class and method names because otherwise R will mix them up; it is standard practice to choose just one OOP system and stick to it throughout your project).
+
+```{r}
+library(methods)
+
+setClass("txt4", contains = "character")
+
+setGeneric("count", function(vec) standardGeneric("count"))
+
+setMethod("count", "txt4", function(vec) table(vec, useNA = "ifany"))
+```
+
+```{r}
+vec5 <- new("txt4", c("a", "rose", "is", "a", "rose", "is", "a", "rose"))
+count(vec5)
+```
+
+```{r}
+setRefClass(
+  "txtR",
+  fields = c(vec = "character"),
+  methods = list(
+    count = function() {
+      table(vec, useNA = "ifany")
+    }
+  )
+  )
+```
+
+```{r}
+vec6 <- new("txtR", vec = c("a", "rose", "is", "a", "rose", "is", "a", "rose"))
+vec6$count()
+```
+
+## 13.
+
+Compare the computation time of the three methods with the computation time of simply using the `table()` function (which you might already have used in your methods but that is okay: in that case you will actually measure the computation time of the method dispatch). Do this comparison on a vector of a million randomly sampled letters from the (Roman) alphabet:
+
+```{r}
+set.seed(123)
+
+vec7 <- sample(letters, 1e6, replace = TRUE)
+
+vec8 <- new("txt4", vec7)
+vec9 <- new("txtR", vec = vec7)
+class(vec7) <- "text"
+```
+
+```{r}
+microbenchmark(
+  freqs(vec7),
+  count(vec8),
+  vec9$count()
+)
+```
+
+## 14.
+
+A simple linear regression model estimates an __intercept__ and a __slope__ parameter of a regression line with which one variable can be explained/predicted in terms of another variable. For instance, the core R dataset `cars` has two variables _speed (mph)_ and _stopping distance (ft)_ and the second variable can be predicted/explained in terms of the first variable using the following intercept and slope parameters (estimated on the basis of 50 observations):
+
+```{r}
+linmod <- lm(dist ~ speed, data = cars)
+linmod
+```
+
+In other words, this linear regression model essentially states (using more digits for both parameters):
+
+$$dist = `r coef(linmod)[1]` + `r coef(linmod)[2]` \, \times \, speed$$
+
+This means that particular __predictions__ for _stopping distance (ft)_ can be obtained by specifying certain values for _speed (mph)_ and plugging them into the equation of the linear regression model. Say, we would like the predicted values of _stopping distance (ft)_ for the _speed (mph)_ values _5_, _6_ and _7_. Modify the following two functions in order to obtain the proper result instead of the error message:
+
+```{r}
+parameters <- function(mod) {
+coefs <- coefficients(mod)
+}
+predictions <- function(x, mod) {
+parameters(mod)
+coefs[1] + coefs[2] * x
+}
+predictions(x = 5:7, mod = linmod)
+```
+
+```{r}
+parameters <- function(mod) {
+  coefs <- coefficients(mod)
+}
+
+predictions <- function(x, mod) {
+  coefs <- parameters(mod)
+  coefs[1] + coefs[2] * x
+}
+
+predictions(x = 5:7, mod = linmod)
+```
