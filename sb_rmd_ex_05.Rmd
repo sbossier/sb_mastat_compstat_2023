@@ -1,0 +1,231 @@
+---
+title: "sb_rmd_ex_05"
+author: "Sander Bossier"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(microbenchmark)
+library(tidyverse)
+library(data.table)
+```
+
+## 1.
+
+```{r results='hide'}
+speed_read_baseR <- microbenchmark(
+  read.delim(
+    file = "https://raw.githubusercontent.com/kplevoet/texts/main/doyle/baskervilles_TAG.txt",
+    sep = "\t",
+    encoding = "UTF-8",
+    quote = ""
+    ),
+  times = 20,
+  unit = "ms"
+)
+
+speed_read_tidy <- microbenchmark(
+  read_delim(
+    file = "https://raw.githubusercontent.com/kplevoet/texts/main/doyle/baskervilles_TAG.txt",
+    show_col_types = FALSE,
+    quote = ""
+  ),
+  times = 20,
+  unit = "ms"
+)
+
+speed_read_dt <- microbenchmark(
+  fread(
+    input = "https://raw.githubusercontent.com/kplevoet/texts/main/doyle/baskervilles_TAG.txt",
+    sep = "\t",
+    encoding = "UTF-8",
+    quote = ""
+  ),
+  times = 20,
+  unit = "ms"
+)
+```
+
+The average speed of the base R function `read.delim` is `r summary(speed_read_baseR)$mean` ms, the average speed of the tidyverse readr `read_delim` function is `r summary(speed_read_tidy)$mean` ms, and the average speed of the data.table `fread` function is `r summary(speed_read_dt)$mean` ms.
+
+```{r}
+data_baseR <- read.delim(
+  file = "https://raw.githubusercontent.com/kplevoet/texts/main/doyle/baskervilles_TAG.txt",
+  sep = "\t",
+  encoding = "UTF-8",
+  quote = ""
+  )
+
+data_tidy <- read_delim(
+  file = "https://raw.githubusercontent.com/kplevoet/texts/main/doyle/baskervilles_TAG.txt",
+  show_col_types = FALSE,
+  quote = ""
+  )
+
+data_dt <- fread(
+  input = "https://raw.githubusercontent.com/kplevoet/texts/main/doyle/baskervilles_TAG.txt",
+  sep = "\t",
+  encoding = "UTF-8",
+  quote = ""
+)
+```
+
+The object size for the base R data.frame is `r format(object.size(data_baseR), units = "Kb")`, the object size of of tidyverse tibble is `r format(object.size(data_tidy), units = "Kb")`, and the size of the data.frame is `r format(object.size(data_dt), units = "Kb")`.
+
+## 2.
+
+```{r}
+data_baseR_noPUNCT <- subset(
+  x = data_baseR,
+  subset = toupper(upos) != "PUNCT"
+)
+
+data_tidy_noPUNCT <- data_tidy %>%
+  filter(toupper(upos) != "PUNCT")
+
+data_dt_noPUNCT <- data_dt[toupper(upos) != "PUNCT"]
+```
+
+## 3.
+
+```{r}
+data_baseR_noPUNCT <- within(
+  data = data_baseR_noPUNCT,
+  expr = {
+    token_low <- tolower(token)
+    lemma_low <- tolower(lemma)
+  }
+)
+
+data_tidy_noPUNCT <- data_tidy_noPUNCT %>%
+  mutate(
+    token_low = tolower(token),
+    lemma_low = tolower(lemma)
+  )
+
+data_dt_noPUNCT[
+  ,
+  c("token_low", "lemma_low") := list(
+    tolower(token),
+    tolower(lemma)
+  )
+]
+```
+
+
+## 4.
+
+```{r}
+lemma_low_freq_baseR <- with(
+    data = data_baseR_noPUNCT,
+    expr = as.data.frame(
+      x = table(
+        lemma_low
+        ),
+      responseName = "Freq"
+    )
+  )
+
+lemma_low_freq_tidy <- data_tidy_noPUNCT %>%
+  group_by(lemma_low) %>%
+  summarise(Freq = n())
+
+lemma_low_freq_dt <- data_dt_noPUNCT[
+  ,
+  list(Freq = .N),
+  by = lemma_low
+]
+```
+
+## 5.
+
+```{r}
+lemma_low_freq_baseR <- lemma_low_freq_baseR[
+  with(
+    data = lemma_low_freq_baseR,
+    expr = order(Freq,
+                 decreasing = TRUE
+                 )
+    ),
+  ]
+
+lemma_low_freq_tidy <- lemma_low_freq_tidy %>%
+  arrange(desc(Freq))
+
+lemma_low_freq_dt <- lemma_low_freq_dt[
+  order(Freq, decreasing = TRUE)
+]
+```
+
+## 6.
+
+```{r}
+upos_type <- data.frame(upos = c("NOUN", "PROPN", "ADJ",
+                                 "VERB", "ADV", "NUM",
+                                 "DET", "PRON", "ADP",
+                                 "CCONJ", "SCONJ", "PART",
+                                 "AUX", "INTJ"),
+                        type = c(rep("Content", 6),
+                                 rep("Function", 8)))
+
+
+data_baseR_noPUNCT$upos <- toupper(data_baseR_noPUNCT$upos)
+data_baseR_noPUNCT_merge <- merge(
+  x = data_baseR_noPUNCT,
+  y = upos_type,
+  by.x = "upos",
+  by.y = "upos"
+  )
+
+data_tidy_noPUNCT_merge <- data_tidy_noPUNCT %>%
+  mutate(upos = str_to_upper(upos)) %>%
+  inner_join(
+    x = .,
+    y = upos_type,
+    by = "upos"
+  )
+
+data_dt_noPUNCT <- data_dt_noPUNCT[as.data.table(upos_type),
+                on = c(upos = "upos")]
+```
+
+## 7.
+
+```{r}
+lemma_low_freq_baseR$Perc <- lemma_low_freq_baseR$Freq / sum(lemma_low_freq_baseR$Freq) * 100
+
+lemma_low_freq_baseR_long <- reshape(
+    lemma_low_freq_baseR,
+    direction = "long",
+    varying = c("Freq", "Perc"),
+    idvar = "lemma_low",
+    v.names = "Value",
+    times = c("Freq", "Perc"),
+    timevar = "Type"
+  )
+
+lemma_low_freq_tidy_long <- lemma_low_freq_tidy %>%
+  mutate(
+    Perc = Freq / sum(Freq) * 100
+  ) %>%
+  pivot_longer(
+    cols = c("Freq", "Perc"),
+    names_to = "Type",
+    values_to = "Value"
+  )
+
+lemma_low_freq_dt <- lemma_low_freq_dt[
+    ,
+    Perc := Freq / sum(Freq) * 100
+  ]
+
+lemma_low_freq_dt_long <- melt(
+    data = lemma_low_freq_dt,
+    id.vars = "lemma_low",
+    measure.vars = c("Freq", "Perc"),
+    variable.name = "Type",
+    value.name = "Value"
+  )
+```
