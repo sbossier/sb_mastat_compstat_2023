@@ -1,0 +1,209 @@
+---
+title: "Exercises - Class 5: Data manipulation"
+author: "Koen Plevoets"
+date: "24-10-2023"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = FALSE, echo = FALSE)  # echo = TRUE for Solution
+knitr::opts_chunk$set(eval = knitr::opts_chunk$get("echo"))
+```
+
+&nbsp;
+
+For the exercises on _Data wrangling in R_ you are going to work with the file `baskervilles_TAG.txt` which can be found on the Github repository `https://github.com/kplevoet/texts/tree/main/doyle`. This file contains the Sherlock Holmes novel _The Hound of the Baskervilles_ (written by Arthur Conan Doyle) in the following structure:
+
+- `doc_id`: A unique identifier of the text (hence, data sets for different texts could be combined)
+- `token`: The actual token as it appears in the text
+- `lemma`: The "dictionary form" of the token (i.e. the word without its [inflectional](https://en.wikipedia.org/wiki/Inflection) variants)
+- `upos`: The "universal part-of-speech tag" or word category of the token. The categories are based on the [CoNNL-U](https://universaldependencies.org/u/pos/index.html) standard in Natural Language Processing.
+
+&nbsp;
+
+### Goal of the exercises: measure computation times
+Each of the following exercises will ask you to compute essentially the same result in three different ways: base R, **tidyverse** or `data.table`s. The idea is that you compare the performance of the three computations by _timing_ them. You can use whatever means of measuring computation time but the solutions will apply the function `system.time()`.
+
+&nbsp;
+
+```{r initialize}
+library(tidyverse)
+library(data.table)
+```
+
+### 1.
+Read the file `baskervilles_TAG.txt` from the Github repository \linebreak `https://github.com/kplevoet/texts/tree/main/doyle`. Note that the URL on which Github _shows_ a file is not the URL from which you can _download_ it. Downloading files from Github always involves the use of `https://raw.githubusercontent.com/` and the actual URL can be found by clicking on the `Raw` button or the `View raw` link.
+
+Store this dataset in three objects:
+
+- A data frame, using one of R's core functions
+- A tibble, using one of **tidyverse**'s functions
+- A data table, using the `fread()` function of the **data.table** package
+
+After timing each function you should also compare the byte sizes of the three resulting objects (using `object.size()`).
+
+```{r read}
+bask_url <- paste("https://raw.githubusercontent.com",
+                  "kplevoet/texts/main",
+                  "doyle",
+                  "baskervilles_TAG.txt", sep = "/")
+system.time(
+  bask_df <- read.delim(bask_url, header = TRUE, quote = "", encoding = "UTF-8")
+)
+system.time(
+  bask_tb <- read_delim(bask_url, delim = "\t", quote = "")
+)
+system.time(
+  bask_dt <- fread(bask_url, header = TRUE, quote = "", encoding = "UTF-8")
+)
+object.size(bask_df)
+object.size(bask_tb)
+object.size(bask_dt)
+```
+
+### 2.
+The `upos` column indicates punctuation sign by the label `PUNCT`. Create subsets by removing these observations, using:
+
+- the `subset()` function on the data frame
+- a **tidyverse** function on the tibble (either as part of a pipe or not)
+- an index on the data table
+
+```{r subs}
+system.time(
+  subs_df <- subset(bask_df, upos != "PUNCT")
+)
+system.time(
+  subs_tb <- bask_tb %>% filter(upos != "PUNCT")
+)
+system.time(
+  subs_dt <- bask_dt[upos != "PUNCT"]
+)
+```
+
+### 3.
+Create new columns `token_low` and `lemma_low` by converting the (respective) columns `token` and `lemma` to lowercase. Do this using:
+
+- the function `within()` on the data frame
+- a **tidyverse** function on the tibble (either as part of a pipe or not)
+- the proper operators in the data table
+
+```{r lows}
+system.time(
+  lows_df <- within(subs_df, {
+    token_low <- tolower(token)
+    lemma_low <- tolower(lemma)
+  })
+)
+system.time(
+  lows_tb <- subs_tb %>% mutate(token_low = tolower(token),
+                                lemma_low = tolower(lemma))
+)
+system.time(
+  lows_dt <- subs_dt[, c("token_low", "lemma_low") :=
+                       .(tolower(token), tolower(lemma))]
+)
+# Or:
+system.time(
+  lows_dt <- subs_dt[, c("token_low", "lemma_low") := lapply(.SD, tolower),
+                     .SDcols = c("token", "lemma")]
+)
+```
+
+### 4.
+Compute the frequencies of the values in the column `lemma_low` and store them in an object with column names `lemma_low` and `Freq`. Do this using:
+
+- the functions `with()` and `table()` on the data frame
+- a **tidyverse** function or two on the tibble (either as part of a pipe or not)
+- the proper operators in the data table
+
+```{r aggr}
+system.time(
+  freq_df <- data.frame(with(lows_df, table(lemma_low)))
+)
+system.time(
+  freq_tb <- lows_tb %>% group_by(lemma_low) %>% summarise(Freq = n())
+)
+system.time(
+  freq_dt <- lows_dt[, .(Freq = .N), by = lemma_low]
+)
+```
+
+### 5.
+Sort the objects of the previous exercise on the frequencies from largest to smallest. Do this using:
+
+- the function `with()` on the data frame
+- a **tidyverse** function or two on the tibble (either as part of a pipe or not)
+- the proper syntax in the data table
+
+```{r sort}
+system.time(
+  sort_df <- freq_df[with(freq_df, order(Freq, decreasing = TRUE)), ]
+)
+system.time(
+  sort_tb <- freq_tb %>% arrange(desc(Freq))
+)
+system.time(
+  sort_dt <- freq_dt[order(Freq, decreasing = TRUE)]
+)
+```
+
+### 6.
+One of the basic distinctions in language studies is between [content words](https://en.wikipedia.org/wiki/Content_word) and [function words](https://en.wikipedia.org/wiki/Function_word). The following data frame relates this distinction to a word's `upos`:
+
+```{r upos_type, echo = TRUE, eval = TRUE}
+upos_type <- data.frame(upos = c("NOUN", "PROPN", "ADJ", "VERB", "ADV", "NUM",
+                                 "DET", "PRON", "ADP", "CCONJ", "SCONJ", "PART",
+                                 "AUX", "INTJ"),
+                        type = c(rep("Content", 6), rep("Function", 8)))
+upos_type
+```
+
+Merge/Join this data frame (which you can first convert to a tibble or data table) to the objects of exercise 3 using:
+
+- the function `merge()` on the data frame
+- one of the `join()` functions from **tidyverse** on the tibble
+- the proper syntax in the data table
+
+Make sure that you retain all the rows of the frequency objects.
+
+```{r join}
+system.time(
+  join_df <- merge(lows_df, upos_type, by = "upos", all.x = TRUE, sort = FALSE)
+)
+system.time(
+  join_tb <- left_join(lows_tb, as_tibble(upos_type), by = "upos")
+)
+system.time(
+  join_dt <- data.table(upos_type)[lows_dt, on = "upos"]
+)
+```
+
+### 7.
+Add a column `Perc` to the frequency objects of exercise 5 containing the percentages of the counts in the `Freq` column (i.e. the proportion times 100).
+Reshape these objects into long format whereby the values in the `Freq` and `Perc` columns appear underneath each other for each `lemma_low`. Do this using:
+
+- the `reshape()` function on the data frame
+- the proper `pivot_` function from **tidyverse** on the tibble
+- either the function `dcast()` or `melt()` on the data table
+
+In this last exercise you should only time the reshaping functions.
+
+```{r long, warning = FALSE}
+perc_df <- within(sort_df, Perc <- 100 * Freq /sum(Freq))
+perc_tb <- sort_tb %>% mutate(Perc = 100 * Freq / sum(Freq))
+perc_dt <- sort_dt[, Perc := 100 * Freq / sum(Freq)]
+system.time(
+  long_df <- reshape(perc_df, varying = list(c("Freq", "Perc")),
+                     v.names = "Value", timevar = "Count", idvar = "lemma_low",
+                     times = c("Freq", "Perc"), direction = "long")
+)
+system.time(
+  long_tb <- pivot_longer(perc_tb, cols = c("Freq", "Perc"),
+                          names_to = "Count", values_to = "Value")
+)
+system.time(
+  long_dt <- melt(perc_dt, id.vars = "lemma_low",
+                  measure.vars = c("Freq", "Perc"),
+                  variable.name = "Count", value.name = "Value")
+)
+```

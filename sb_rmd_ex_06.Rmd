@@ -1,0 +1,44 @@
+---
+title: "sb_rmd_ex_06"
+author: "Sander Bossier"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1.
+
+R has a core function `coplot()` to do multi-panel conditioning. Use it on the (core) dataset mtcars to create the following plot:
+
+```{r}
+coplot(
+  formula = mpg ~ disp | factor(cyl),
+  data = mtcars,
+  show.given = FALSE)
+```
+
+## 2.
+
+Add a LOESS smoother to the previous conditioning plot:
+
+```{r}
+coplot(
+  formula = mpg ~ disp | factor(cyl),
+  data = mtcars,
+  panel = function(x, y, ...) 
+    panel.smooth(x, y, ...)
+  ,
+  show.given = FALSE)
+```
+
+## 3.
+
+Use the `par()` function to check R’s different coordinate systems: verify that changing one graphical parameter indeed affects other graphical parameters.
+
+```{r}
+par()
+```
+

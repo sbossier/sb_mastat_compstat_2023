@@ -55,20 +55,23 @@ data_baseR <- read.delim(
   file = "https://raw.githubusercontent.com/kplevoet/texts/main/doyle/baskervilles_TAG.txt",
   sep = "\t",
   encoding = "UTF-8",
-  quote = ""
+  quote = "",
+  header = TRUE
   )
 
 data_tidy <- read_delim(
   file = "https://raw.githubusercontent.com/kplevoet/texts/main/doyle/baskervilles_TAG.txt",
   show_col_types = FALSE,
-  quote = ""
+  quote = "",
+  delim = "\t"
   )
 
 data_dt <- fread(
   input = "https://raw.githubusercontent.com/kplevoet/texts/main/doyle/baskervilles_TAG.txt",
   sep = "\t",
   encoding = "UTF-8",
-  quote = ""
+  quote = "",
+  header = TRUE
 )
 ```
 
@@ -175,35 +178,39 @@ data_baseR_noPUNCT$upos <- toupper(data_baseR_noPUNCT$upos)
 data_baseR_noPUNCT_merge <- merge(
   x = data_baseR_noPUNCT,
   y = upos_type,
-  by.x = "upos",
-  by.y = "upos"
+  by = "upos",
+  all.x = TRUE,
+  sort = FALSE
   )
 
 data_tidy_noPUNCT_merge <- data_tidy_noPUNCT %>%
   mutate(upos = str_to_upper(upos)) %>%
-  inner_join(
+  left_join(
     x = .,
-    y = upos_type,
+    y = as_tibble(upos_type),
     by = "upos"
   )
 
-data_dt_noPUNCT <- data_dt_noPUNCT[as.data.table(upos_type),
+data_dt_noPUNCT_merge <- data_dt_noPUNCT[as.data.table(upos_type),
                 on = c(upos = "upos")]
+
+join_dt <- data.table(upos_type)[data_dt_noPUNCT, on = "upos"]
+
+identical(data_dt_noPUNCT_merge, join_dt)
 ```
 
 ## 7.
 
 ```{r}
 lemma_low_freq_baseR$Perc <- lemma_low_freq_baseR$Freq / sum(lemma_low_freq_baseR$Freq) * 100
-
 lemma_low_freq_baseR_long <- reshape(
     lemma_low_freq_baseR,
     direction = "long",
-    varying = c("Freq", "Perc"),
+    varying = list(c("Freq", "Perc")),
     idvar = "lemma_low",
     v.names = "Value",
     times = c("Freq", "Perc"),
-    timevar = "Type"
+    timevar = "Count"
   )
 
 lemma_low_freq_tidy_long <- lemma_low_freq_tidy %>%
@@ -212,7 +219,7 @@ lemma_low_freq_tidy_long <- lemma_low_freq_tidy %>%
   ) %>%
   pivot_longer(
     cols = c("Freq", "Perc"),
-    names_to = "Type",
+    names_to = "Count",
     values_to = "Value"
   )
 
@@ -225,7 +232,7 @@ lemma_low_freq_dt_long <- melt(
     data = lemma_low_freq_dt,
     id.vars = "lemma_low",
     measure.vars = c("Freq", "Perc"),
-    variable.name = "Type",
+    variable.name = "Count",
     value.name = "Value"
   )
 ```

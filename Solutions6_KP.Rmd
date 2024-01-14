@@ -1,0 +1,164 @@
+---
+title: "Exercises - Class 6: Visualization"
+author: "Koen Plevoets"
+date: "29-10-2023"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE,
+                      echo = FALSE)  # echo = TRUE for Solution
+```
+
+```{r initialize}
+library(lattice)
+library(ggplot2)
+```
+
+&nbsp;
+
+### 1.
+R has a core function `coplot()` to do multi-panel conditioning. Use it on the (core) dataset `mtcars` to create the following plot:
+
+```{r coplot}
+coplot(mpg ~ disp | factor(cyl), data = mtcars, show.given = FALSE)
+```
+
+### 2.
+Add a LOESS smoother to the previous conditioning plot:
+
+```{r smooth}
+coplot(mpg ~ disp | factor(cyl), data = mtcars, show.given = FALSE,
+       panel = panel.smooth)
+```
+
+### 3.
+Use the `par()` function to check R's different coordinate systems: verify that changing one graphical parameter indeed affects other graphical parameters.
+
+```{r pars, eval = knitr::opts_chunk$get("echo")}
+# The outer margins are by default set to zero in all coordinate systems:
+par("oma")    # Lines of text (bottom, left, top, right)
+par("omi")    # Inches (bottom, left, top, right)
+par("omd")    # Proportion of device region (left, right, bottom, top)
+# This means that the figure region is set to its maximal size:
+par("fin")    # Inches (width, height)
+par("fig")    # Proportion of device region (left, right, bottom, top)
+# The figure region is the sum of the figure margins and the plot region:
+par("mai")    # Inches (bottom, left, top, right)
+par("pin")    # Inches (width, height)
+# Ergo, par("fin") ==
+par("pin") + c(sum(par("mai")[c(2, 4)]), sum(par("mai")[c(1, 3)]))
+# A corresponding coordinate system for par("mai") is:
+par("mar")    # Lines of text (bottom, left, top, zero)
+# A corresponding coordinate system for par("pin") is:
+par("plt")    # Proportion of figure region (left, right, bottom, top)
+# Changing e.g. the outer margins in one coordinate system changes the
+# corresponding coordinate systems:
+par(oma = c(0.5, 0.5, 0.5, 0.5))
+par("omi")
+par("omd")
+# However, it can also change a graphical parameter for another component:
+par("fin")
+# But not:
+par("fig")
+# Because the figure margins are not affected by changing the outer margins...
+par("mar")
+par("mai")
+# ...the plot region must change:
+par("pin")
+par("plt")
+# Similarly, changing the figure margins while keeping the figure region constant
+# will change the plot region and vice versa.
+# Etc.
+# Undo the change:
+par(oma = c(0, 0, 0, 0))
+```
+
+### 4.
+Use the **lattice** package to create a simple scatter plot of all the data for the `mpg` and `disp` variable of the `mtcars` dataset. Store the plot in a graphical objects called `plt1`. Compute the byte size of that graphical object.
+
+```{r xyplot}
+plt1 <- xyplot(mpg ~ disp, data = mtcars)
+plt1
+```
+
+```{r size_xyplot, eval = knitr::opts_chunk$get("echo")}
+object.size(plt1)
+```
+
+### 5.
+Use the **lattice** package to create the same conditioning plot as in Exercise 1. Store it in a graphical object `plt2` and compute the byte size of this object:
+
+```{r xypanel}
+plt2 <- xyplot(mpg ~ disp | factor(cyl), data = mtcars, layout = c(2, 2))
+plt2
+```
+
+```{r size_xypanel, eval = knitr::opts_chunk$get("echo")}
+object.size(plt2)
+```
+
+### 6.
+Add a LOESS smoother to the previous **lattice** plot (in other words, create a similar plot as in Exercise 2). Store it in a graphical object `plt3` and compute the byte size of this object:
+
+```{r xysmooth, warning = FALSE}
+plt3 <- xyplot(mpg ~ disp | factor(cyl), data = mtcars, layout = c(2, 2),
+               panel = function(x, y, ...) {
+                 panel.xyplot(x, y, ...)
+                 panel.loess(x, y, ...)
+               })
+# There can be some warnings about the LOESS smoother...
+plt3
+```
+
+```{r size_xysmooth, eval = knitr::opts_chunk$get("echo")}
+object.size(plt3)
+```
+
+### 7.
+Use the **ggplot2** package to create a graphical object `plt4` in which the `mpg` and `disp` variables of the `mtcars` dataset are mapped onto the `y` and `x` aesthetic, respectively. Compute the byte size of that graphical object.
+
+```{r ggplot2_object}
+plt4 <- ggplot(data = mtcars, mapping = aes(x = disp, y = mpg))
+```
+
+```{r size_object, eval = knitr::opts_chunk$get("echo")}
+object.size(plt4)
+```
+
+### 8.
+Add a point geom to the graphical object, so you get a similar scatter plot as in Exercise 4. Store this in a graphical object `plt5` and compute its byte size.
+
+```{r ggplot2_geom}
+plt5 <- plt4 + geom_point()
+plt5
+```
+
+```{r size_geom, eval = knitr::opts_chunk$get("echo")}
+object.size(plt5)
+```
+
+### 9.
+Add a facet layer for the `cyl` variable to the previous graphical object. Store it in an object `plt6` and compute the byte size of this object.
+
+```{r ggplot2_facet}
+plt6 <- plt5 + facet_wrap(facets = ~ factor(cyl), nrow = 2, as.table = FALSE)
+plt6
+```
+
+```{r size_facet, eval = knitr::opts_chunk$get("echo")}
+object.size(plt6)    # No difference !
+```
+
+### 10.
+Add a layer with a LOESS smoother to the graphical object of the previous exercise (this may mean that the geom layer is automatically adjusted). Store this into a graphical object `plt7` and compute its byte size.
+
+```{r ggplot2_stat, warning = FALSE}
+plt7 <- plt6 + stat_smooth(method = "loess", se = FALSE)
+# There can be some warnings about the LOESS smoother...
+plt7
+```
+
+```{r size_stat, eval = knitr::opts_chunk$get("echo")}
+object.size(plt7)
+```
