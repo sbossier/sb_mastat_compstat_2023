@@ -9,6 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+<<<<<<< HEAD
 ## 1.
 
 R has a core function `coplot()` to do multi-panel conditioning. Use it on the (core) dataset mtcars to create the following plot:
@@ -42,3 +43,126 @@ Use the `par()` function to check R’s different coordinate systems: verify tha
 par()
 ```
 
+## 4.
+
+Use the **lattice** package to create a simple scatter plot of all the data for the `mpg` and `disp` variable of the `mtcars` dataset. Store the plot in a graphical objects called `plt1`. Compute the byte size of that graphical object.
+
+```{r}
+library(lattice)
+plt1 <- xyplot(
+  mpg ~ disp,
+  data = mtcars
+)
+object.size(plt1)
+plt1
+```
+
+## 5.
+
+Use the **lattice** package to create the same conditioning plot as in Exercise 1. Store it in a graphical object plt2 and compute the byte size of this object:
+
+```{r}
+plt2 <- xyplot(
+  mpg ~ disp | factor(cyl),
+  data = mtcars,
+  layout = c(2,2)
+)
+object.size(plt2)
+plt2
+```
+
+## 6.
+
+Add a LOESS smoother to the previous **lattice** plot (in other words, create a similar plot as in Exercise 2). Store it in a graphical object `plt3` and compute the byte size of this object:
+
+```{r}
+plt3 <- xyplot(
+  mpg ~ disp | factor(cyl),
+  data = mtcars,
+  layout = c(2,2),
+  panel = function(x, y, ...) {
+    panel.xyplot(x, y, ...)
+    panel.loess(x, y, ...)
+  }
+)
+object.size(plt3)
+plt3
+```
+
+## 7.
+
+Use the **ggplot2** package to create a graphical object `plt4` in which the `mpg` and `disp` variables of the `mtcars` dataset are mapped onto the `y` and `x` aesthetic, respectively. Compute the byte size of that graphical object.
+
+```{r}
+library(ggplot2)
+plt4 <- ggplot(
+  data = mtcars,
+  mapping = aes(
+    x = disp,
+    y = mpg
+    )
+  )
+object.size(plt4)
+plt4
+```
+
+## 8.
+
+Add a point geom to the graphical object, so you get a similar scatter plot as in Exercise 4. Store this in a graphical object `plt5` and compute its byte size.
+
+```{r}
+plt5 <- plt4 +
+  geom_point()
+object.size(plt5)
+plt5
+```
+
+## 9.
+
+Add a facet layer for the `cyl` variable to the previous graphical object. Store it in an object `plt6` and compute the byte size of this object.
+
+```{r}
+plt6 <- plt5 +
+  facet_wrap(
+    facets = ~ factor(cyl),
+    nrow = 2,
+    as.table = FALSE
+  )
+object.size(plt6)
+plt6
+```
+
+## 10.
+
+Add a layer with a LOESS smoother to the graphical object of the previous exercise (this may mean that the geom layer is automatically adjusted). Store this into a graphical object `plt7` and compute its byte size.
+
+```{r}
+plt7 <- plt6 +
+  geom_smooth(
+    method = "loess",
+    se = FALSE
+  )
+object.size(plt7)
+plt7
+```
+=======
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+>>>>>>> cd46dadcaa9ad67e0f2094b7001fc4ec2a6b5c2e

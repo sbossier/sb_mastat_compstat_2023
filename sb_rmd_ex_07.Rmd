@@ -1,0 +1,64 @@
+---
+title: "sb_rmd_ex_07"
+author: "Sander Bossier"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1.
+
+Consider the character vector x:
+
+```{r}
+x <- c("Swan swam over the pond, Swim swan swim!",
+"Swam swam back again - Well swum swan!")
+```
+
+Split the strings in `x` into words, removing any *commas* or *hyphens*. Call the result `y`.
+
+```{r}
+y <- strsplit(
+  x,
+  split = ",? -? ?"
+)
+y
+```
+## 2.
+
+The .rda file `hafu` in the RStudio Project `Text` contains a data set `hafu` on manga characters. In the `Father` and `Mother` columns, some values have question marks after the country name, indicating that the author was uncertain about the nationality of the parent:
+
+```{r}
+load("hafu.rda")
+head(hafu[, -ncol(hafu)], n = 10)
+```
+Create two vectors `FatherUncertain` and `MotherUncertain` denoting whether or not there was a question mark in the `Father` or `Mother` column, respectively.
+
+```{r}
+FatherUncertainSB <- endsWith(
+  x = as.character(hafu$Father),
+  suffix = "?"
+)
+MotherUncertainSB <- endsWith(
+  x = as.character(hafu$Mother),
+  suffix = "?"
+)
+
+FatherUncertain <- with(hafu, grepl("\\?", Father))
+MotherUncertain <- with(hafu, grepl("\\?", Mother))
+
+identical(FatherUncertain, FatherUncertainKP)
+identical(MotherUncertain, MotherUncertainKP)
+```
+
+## 3.
+
+Create a new data frame `hafu2` by removing the question marks from the `Father` and `Mother` columns in `hafu` (i.e. replace them by an empty string).
+
+```{r}
+
+```
+

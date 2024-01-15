@@ -1,0 +1,218 @@
+---
+title: "Exercises - Class 7: Text"
+author: "Koen Plevoets"
+date: "04-11-2023"
+output: pdf_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE,
+                      echo = FALSE)  # echo = TRUE for Solution
+# This .Rmd file should be in the same folder alongside RStudio Project 'Text':
+knitr::opts_knit$set(root.dir = ".//Text")
+```
+
+&nbsp;
+
+The exercises can be carried out using the RStudio Project `Text`. It contains all necessary data files.
+
+&nbsp;
+
+## Exercises
+
+### 1.
+Consider the character vector `x`:
+
+```{r show_split, echo = TRUE}
+x <- c("Swan swam over the pond, Swim swan swim!",
+    "Swam swam back again - Well swum swan!")
+```
+
+Split the strings in `x` into words, removing any *commas* or *hyphens*. Call the result `y`.
+
+```{r split}
+# Solution 1:
+y <- strsplit(x, split = ",? -? ?")    # The argument split can be a regex!
+y
+```
+
+### 2.
+The .rda file `hafu` in the RStudio Project `Text` contains a data set `hafu` on manga characters. In the `Father` and `Mother` columns, some values have question marks after the country name, indicating that the author was uncertain about the nationality of the parent:
+
+```{r show_hafu, echo = TRUE}
+load("hafu.rda")
+head(hafu[, -ncol(hafu)], n = 10)
+```
+
+Create two vectors `FatherUncertain` and `MotherUncertain` denoting whether or not there was a question mark in the `Father` or `Mother` column, respectively.
+
+```{r hafu}
+# Solution 2:
+FatherUncertain <- with(hafu, grepl("\\?", Father))
+MotherUncertain <- with(hafu, grepl("\\?", Mother))
+```
+
+### 3.
+Create a new data frame `hafu2` by removing the question marks from the `Father` and `Mother` columns in `hafu` (i.e. replace them by an empty string).
+
+```{r hafu2}
+# Solution 3:
+hafu2 <- within(hafu, {
+  Father <- gsub("\\?", "", Father)
+  Mother <- gsub("\\?", "", Mother)
+})
+```
+
+&nbsp;
+
+## Challenges
+
+### 4.
+The .rda file `Dataline` contains a vector `Dataline` that contains a single value. This value is the result of a webscraper. It contains 1500 fields, separated by a semicolon:
+
+```{r show_Dataline, echo = TRUE}
+load("Dataline.rda")
+```
+
+Create a vector `Fields` which contains the 1500 fields as separate values.
+
+```{r Dataline}
+# Solution 4:
+Fields <- strsplit(Dataline, split = ";")[[1]]
+```
+
+### 5.
+On the basis of the vector `Fields` create:
+
+- A character vector `Label` containing the labels of every field: possible values are "Low", "Middle" and "High"
+- A numeric vector `ID` containing the ID numbers of every field (i.e. the value following the underscore)
+- A character vector `newLabel` containing labels constructed as `ID_xxx_Label`, with `xxx` the value of `ID` for that field and `Label` the value of `Label` for that field
+
+```{r show_Fields, echo = TRUE}
+head(Fields, n = 10)
+```
+
+```{r Fields}
+# Solution 5:
+Label <- gsub("ID.*", "", Fields)
+ID <- as.numeric(gsub("[^_]+_", "", Fields))
+newLabel <- paste("ID", ID, Label, sep = "_")
+```
+
+### 6.
+The file genes.rda contains a named vector `genes`. This vector contains the function descriptions of a set of genes. The names of this vector give the COG codes of these genes:
+
+```{r show_genes, echo = TRUE}
+load("genes.rda")
+head(genes, n = 10)
+```
+
+Use this vector to create a character vector `geneclass` with the values "Predicted", "Uncharacterized" and "Described". These are defined as follows:
+
+- If the gene description contains "Uncharacterized", it is always called "Uncharacterized"
+- If the gene description contains "Predicted" but not "Uncharacterized", it is called "Predicted"
+- All other genes are called "Described"
+
+```{r genes}
+# Solution 6:
+geneclass <- rep("Described", length(genes))
+IDUnch <- grep("Uncharacterized", genes, ignore.case = TRUE)
+IDPred <- grep("Predicted", genes, ignore.case = TRUE)
+geneclass[IDPred] <- "Predicted"
+geneclass[IDUnch] <- "Uncharacterized"
+```
+
+### 7.
+Use the `genes` vector to find all COG codes for functions containing an enzyme name. An enzyme can be recognised by their name ending on "ase" or "ases". For this, you need to:
+
+- Extract the COG code from the names: this consists of the numbers following the letters COG in the name
+- Find at which positions in the vector genes an enzyme is described
+- Use the information from the previous two steps to find only the COG codes of the enzymes
+
+```{r enzymCOG}
+# Solution 7:
+COG <- gsub("\\D", "", names(genes))
+isEnzyme <- grep("ases?\\b", genes)
+enzymCOG <- COG[isEnzyme]
+```
+
+### 8.
+The RStudio Project `Text` also contains two external files appletweets.txt and microsofttweets.txt. Each contains a selection of tweets scraped from Twitter/X and addressed to the helpdesk of either Apple or Microsoft.
+
+Use the function `readLines()` to read in both files. Store the tweets for Apple in a vector `AppleTweets` and those for Microsoft in a vector `MSTweets`.
+
+```{r readTweets}
+# Solution 8:
+AppleTweets <- readLines("appletweets.txt")
+MSTweets <- readLines("microsofttweets.txt")
+```
+
+### 9.
+Make sure that there are no empty character values (`""`) in either vector.
+
+```{r removeEmpty}
+# Solution 9:
+AppleTweets <- AppleTweets[AppleTweets != ""]
+MSTweets <- MSTweets[MSTweets != ""]
+```
+
+### 10.
+Count the number of tweets that talk about iOS10. Think about possible spaces and capitalization.
+
+```{r iOS10}
+# Solution 10:
+HASiOS10 <- sum(grepl("\\biOS\\s?10", AppleTweets, ignore.case = TRUE))
+```
+
+&nbsp;
+
+## Extra exercises on dates and date-time objects
+
+### 11.
+Dates and Date-time objects in R are based on strings. Create the following objects (think about which type to use):
+
+- A vector called `time1`: 2011-01-30
+- A vector called `time2`: 30/01/11
+- A vector called `time3`: Jan 30, 2011 14:45 UTC
+
+You can you these strings as your starting point:
+
+```{r show_times, echo = TRUE}
+text1 <- "2011-01-30"
+text2 <- "30/01/11"
+text3 <- "Jan 30, 2011 14:45 UTC"
+```
+
+```{r times}
+# Solution 11:
+time1 <- as.Date(text1)
+time2 <- as.Date(text2, format = "%d/%m/%y")
+time3 <- as.POSIXct(text3, format = "%b %d, %Y %H:%M",
+                    tz =  gsub(".+ (\\w{3}$)", "\\1", text3))
+```
+
+### 12.
+Create a vector called `dateSeq` containing the dates:
+
+- Starting from July, 1st 1989
+- Ending at the last valid date before today
+- With a periodicity of 3 months
+
+```{r dateSeq}
+# Solution 12:
+dateSeq <- seq(as.Date("1989-07-01"),
+               Sys.Date() - 1,
+               by = "3 months")
+```
+
+### 13.
+Find in `dateSeq`:
+
+- All dates that are later than January 2nd, 2000
+- All dates in dateSeq that fall on a Monday
+
+```{r dateSeq2}
+# Solution 13:
+date212 <- dateSeq[which(dateSeq > as.Date("2000-01-02"))]
+dateMon <- dateSeq[weekdays(dateSeq) == "Monday"]    # Depends on your Locale
+```
