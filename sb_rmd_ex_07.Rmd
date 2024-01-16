@@ -50,13 +50,49 @@ MotherUncertainSB <- endsWith(
 FatherUncertain <- with(hafu, grepl("\\?", Father))
 MotherUncertain <- with(hafu, grepl("\\?", Mother))
 
-identical(FatherUncertain, FatherUncertainKP)
-identical(MotherUncertain, MotherUncertainKP)
+identical(FatherUncertainSB, FatherUncertain)
+identical(MotherUncertainSB, MotherUncertain)
 ```
 
 ## 3.
 
 Create a new data frame `hafu2` by removing the question marks from the `Father` and `Mother` columns in `hafu` (i.e. replace them by an empty string).
+
+```{r}
+hafu2 <- within(hafu, {
+  Father <- gsub(pattern = "\\?", replacement = "", x = Father)
+  Mother <- gsub(pattern = "\\?", replacement = "", x = Mother)
+  }
+)
+```
+
+## Challenges
+
+## 4.
+
+The .rda file `Dataline` contains a vector `Dataline` that contains a single value. This value is the result of a
+webscraper. It contains 1500 fields, separated by a semicolon:
+
+```{r}
+load("Dataline.rda")
+```
+
+Create a vector `Fields` which contains the 1500 fields as separate values.
+
+```{r}
+Fields <- strsplit(Dataline, split = ";")[[1]]
+```
+
+## 5.
+
+On the basis of the vector `Fields` create:
+* A character vector `Label` containing the labels of every field: possible values are “Low”, “Middle” and “High”.
+* A numeric vector `ID` containing the ID numbers of every field (i.e. the value following the underscore).
+* A character vector `newLabel` containing labels constructed as `ID_xxx_Label`, with `xxx` the value of `ID` for that field and `Label` the value of `Label` for that field.
+
+```{r}
+head(Fields, n = 10)
+```
 
 ```{r}
 

@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## 1.
 
 R has a core function `coplot()` to do multi-panel conditioning. Use it on the (core) dataset mtcars to create the following plot:
@@ -146,6 +147,8 @@ object.size(plt7)
 plt7
 ```
 =======
+=======
+>>>>>>> cd46dadcaa9ad67e0f2094b7001fc4ec2a6b5c2e
 ## R Markdown
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
@@ -165,4 +168,7 @@ plot(pressure)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+<<<<<<< HEAD
+>>>>>>> cd46dadcaa9ad67e0f2094b7001fc4ec2a6b5c2e
+=======
 >>>>>>> cd46dadcaa9ad67e0f2094b7001fc4ec2a6b5c2e
