@@ -50,8 +50,8 @@ MotherUncertainSB <- endsWith(
 FatherUncertain <- with(hafu, grepl("\\?", Father))
 MotherUncertain <- with(hafu, grepl("\\?", Mother))
 
-identical(FatherUncertain, FatherUncertainKP)
-identical(MotherUncertain, MotherUncertainKP)
+identical(FatherUncertainSB, FatherUncertain)
+identical(MotherUncertainSB, MotherUncertain)
 ```
 
 ## 3.
@@ -59,6 +59,113 @@ identical(MotherUncertain, MotherUncertainKP)
 Create a new data frame `hafu2` by removing the question marks from the `Father` and `Mother` columns in `hafu` (i.e. replace them by an empty string).
 
 ```{r}
+hafu2 <- within(hafu, {
+  Father <- gsub(pattern = "\\?", replacement = "", x = Father)
+  Mother <- gsub(pattern = "\\?", replacement = "", x = Mother)
+  }
+)
+```
+
+## Challenges
+
+## 4.
+
+The .rda file `Dataline` contains a vector `Dataline` that contains a single value. This value is the result of a
+webscraper. It contains 1500 fields, separated by a semicolon:
+
+```{r}
+load("Dataline.rda")
+```
+
+Create a vector `Fields` which contains the 1500 fields as separate values.
+
+```{r}
+Fields <- strsplit(Dataline, split = ";")[[1]]
+```
+
+## 5.
+
+On the basis of the vector `Fields` create:
+* A character vector `Label` containing the labels of every field: possible values are “Low”, “Middle” and “High”.
+* A numeric vector `ID` containing the ID numbers of every field (i.e. the value following the underscore).
+* A character vector `newLabel` containing labels constructed as `ID_xxx_Label`, with `xxx` the value of `ID` for that field and `Label` the value of `Label` for that field.
+
+```{r}
+head(Fields, n = 10)
+```
+
+```{r}
+Label <- gsub(
+  pattern = "ID_\\d+", #KP solution is more general by no requiring the underscore followed by any number of digits, but by just specifying any number of characters (zero or more occurrences)
+  replacement = "",
+  x = Fields
+)
+
+ID <- as.numeric(
+  gsub(
+    pattern = "\\w+ID_", # again KP solution is more general as it matches a sequence of one or more non-underscore characters, followed by an underscore
+    replacement = "",
+    x = Fields
+  )
+)
+
+newLabel <- paste(
+  "ID",
+  ID,
+  Label,
+  sep = "_"
+)
+```
+
+```{r Fields}
+# Solution 5:
+LabelKP <- gsub("ID.*", "", Fields)
+IDKP <- as.numeric(gsub("[^_]+_", "", Fields))
+newLabelKP <- paste("ID", ID, Label, sep = "_")
+```
+
+```{r}
+identical(Label, LabelKP)
+identical(ID, IDKP)
+identical(newLabel, newLabelKP)
+```
+
+## 6.
+
+The file genes.rda contains a named vector `genes`. This vector contains the function descriptions of a set of genes. The names of this vector give the COG codes of these genes:
+
+```{r}
+load("genes.rda")
+head(genes, n = 10)
+```
+
+Use this vector to create a character vector `geneclass` with the values “Predicted”, “Uncharacterized” and “Described”. These are defined as follows:
+* If the gene description contains “Uncharacterized”, it is always called “Uncharacterized”
+* If the gene description contains “Predicted” but not “Uncharacterized”, it is called “Predicted”
+* All other genes are called “Described”
+
+```{r}
+geneclass <- rep("Described", length(genes))
+IDunc <- grep(pattern = "uncharacterized", x = genes, ignore.case = TRUE)
+IDpred <- grep(pattern = "predicted", x = genes, ignore.case = TRUE)
+geneclass[IDpred] <- "Predicted"
+geneclass[IDunc] <- "Uncharacterized"
+```
+
+## 7.
+
+Use the `genes` vector to find all COG codes for functions containing an enzyme name. An enzyme can be recognised by their name ending on “ase” or “ases”. For this, you need to:
+* Extract the COG code from the names: this consists of the numbers following the letters COG in the
+name
+* Find at which positions in the vector genes an enzyme is described
+* Use the information from the previous two steps to find only the COG codes of the enzymes
+
+```{r}
+COGcodes <- gsub(
+  pattern = ".*COG",
+  replacement = "",
+  x = names(genes)
+)
 
 ```
 
