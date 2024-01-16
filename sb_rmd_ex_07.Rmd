@@ -95,6 +95,7 @@ head(Fields, n = 10)
 ```
 
 ```{r}
+<<<<<<< HEAD
 Label <- gsub(
   pattern = "ID_\\d+", #KP solution is more general by no requiring the underscore followed by any number of digits, but by just specifying any number of characters (zero or more occurrences)
   replacement = "",
@@ -166,6 +167,8 @@ COGcodes <- gsub(
   replacement = "",
   x = names(genes)
 )
+=======
+>>>>>>> d0aab97a1b1c212f3112dfd64bb7252effd42014
 
 ```
 
