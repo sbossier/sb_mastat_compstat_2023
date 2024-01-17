@@ -14,8 +14,10 @@ knitr::opts_chunk$set(echo = TRUE)
 Consider the character vector x:
 
 ```{r}
-x <- c("Swan swam over the pond, Swim swan swim!",
-"Swam swam back again - Well swum swan!")
+x <- c(
+  "Swan swam over the pond, Swim swan swim!",
+  "Swam swam back again - Well swum swan!"
+)
 ```
 
 Split the strings in `x` into words, removing any *commas* or *hyphens*. Call the result `y`.
@@ -95,7 +97,6 @@ head(Fields, n = 10)
 ```
 
 ```{r}
-<<<<<<< HEAD
 Label <- gsub(
   pattern = "ID_\\d+", #KP solution is more general by no requiring the underscore followed by any number of digits, but by just specifying any number of characters (zero or more occurrences)
   replacement = "",
@@ -163,12 +164,147 @@ name
 
 ```{r}
 COGcodes <- gsub(
-  pattern = ".*COG",
+  pattern = ".*COG", # Again KP solutions is likely more general as it matches any non-digit characters
   replacement = "",
   x = names(genes)
 )
-=======
->>>>>>> d0aab97a1b1c212f3112dfd64bb7252effd42014
+postions <- grepl(
+  pattern = ".*ases?\\b", # The questionmark only affects the 's' and thus the pattern can match 'ase' and 'ases'
+  x = genes
+)
+COGcodes_recognized <- COGcodes[postions]
+```
 
+```{r}
+COG <- gsub("\\D", "", names(genes))
+isEnzyme <- grep("ases?\\b", genes)
+enzymCOG <- COG[isEnzyme]
+```
+
+```{r}
+identical(COGcodes_recognized, enzymCOG)
+```
+
+## 8.
+
+The RStudio Project `Text` also contains two external files appletweets.txt and microsofttweets.txt. Each contains a selection of tweets scraped from Twitter/X and addressed to the helpdesk of either Apple or Microsoft.
+Use the function `readLines()` to read in both files. Store the tweets for Apple in a vector `AppleTweets` and those for Microsoft in a vector `MSTweets.`
+
+```{r}
+AppleTweets <- readLines(
+  con = "appletweets.txt",
+  encoding = "UTF-8"
+)
+MSTweets <- readLines(
+  con = "microsofttweets.txt",
+  encoding = "UTF-8"
+)
+```
+
+## 9.
+
+Make sure that there are no empty character values ("") in either vector.
+
+```{r}
+AppleTweets <- readLines(
+  con = "appletweets.txt",
+  encoding = "UTF-8"
+)
+MSTweets <- readLines(
+  con = "microsofttweets.txt",
+  encoding = "UTF-8"
+)
+```
+
+```{r}
+AppleTweets <- AppleTweets[AppleTweets != ""]
+MSTweets <- MSTweets[MSTweets != ""]
+```
+
+## 10.
+
+Count the number of tweets that talk about iOS10. Think about possible spaces and capitalization.
+
+```{r}
+HASiOS10 <- sum(
+  grepl(
+    pattern = "\\bios\\s?10",
+    x = AppleTweets,
+    ignore.case = TRUE
+  )
+)
+HASiOS10
+```
+
+# Extra exercises on dates and date-time objects
+
+## 11.
+
+Dates and Date-time objects in R are based on strings. Create the following objects (think about which type to use):
+* A vector called time1: 2011-01-30
+* A vector called time2: 30/01/11
+* A vector called time3: Jan 30, 2011 14:45 UTC
+
+You can you these strings as your starting point:
+
+```{r}
+text1 <- "2011-01-30"
+text2 <- "30/01/11"
+text3 <- "Jan 30, 2011 14:45 UTC"
+```
+
+```{r}
+time1 <- as.Date(text1)
+time2 <- strptime(text2, format = "%d/%m/%y")
+time3 <- strptime(text3, format = "%b %d, %Y %H:%M", tz = "UTC")
+time1
+time2
+time3
+```
+
+## 12.
+
+Create a vector called `dateSeq` containing the dates:
+* Starting from July, 1st 1989
+* Ending at the last valid date before today
+* With a periodicity of 3 months
+
+```{r}
+dateSeq <- seq(
+  from = as.Date("July, 1st 1989", format = "%B, %dst %Y"),
+  to = Sys.Date()-1,
+  by = "3 months"
+)
+```
+
+## 13.
+
+Find in `dateSeq`:
+* All dates that are later than January 2nd, 2000
+* All dates in dateSeq that fall on a Monday
+
+```{r}
+dateSeq[dateSeq > as.Date("2000-01-02")]
+dateSeq[weekdays(dateSeq) == "Monday"]
+```
+
+```{r}
+identical(dateSeq[dateSeq > as.Date("2000-01-02")], dateSeq[which(dateSeq > as.Date("2000-01-02"))])
+```
+
+```{r}
+library(microbenchmark)
+
+microbenchmark(
+  dateSeq[dateSeq > as.Date("2000-01-02")],
+  times = 10000,
+  unit = "us"
+)
+
+microbenchmark(
+  dateSeq[which(dateSeq > as.Date("2000-01-02"))],
+  times = 10000,
+  unit = "us"
+)
 ```
 
