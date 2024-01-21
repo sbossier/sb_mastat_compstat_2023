@@ -1,0 +1,143 @@
+---
+title: "sb_rmd_example_exam"
+author: "Sander Bossier"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(tidyverse)
+library(lattice)
+```
+
+## Q1.
+
+```{r}
+book_url <- c(
+  "https://raw.githubusercontent.com/kplevoet/texts/main/austen/emma_TAG.txt",
+  "https://raw.githubusercontent.com/kplevoet/texts/main/austen/mansfield_TAG.txt",
+  "https://raw.githubusercontent.com/kplevoet/texts/main/austen/pride_TAG.txt",
+  "https://raw.githubusercontent.com/kplevoet/texts/main/austen/sense_TAG.txt"
+)
+
+novels <- rbindlist(
+  lapply(
+    book_url,
+    function(url) {
+      fread(
+        input = url,
+        header = TRUE,
+        encoding = "UTF-8",
+        quote = ""
+      )
+    }
+  )
+)
+```
+
+## Q2.
+
+```{r}
+upper <- novels[, .(Capitalized = sum(grepl(pattern = "[A-Z]", lemma))), by = doc_id]
+```
+
+```{r}
+# OR
+# upper <-
+novels %>%
+  group_by(doc_id) %>%
+  summarise(Capitalized = sum(grepl("[[:upper:]]", lemma)))
+```
+
+```{r}
+knitr::kable(upper)
+```
+
+
+## Q3.
+
+```{r}
+nouns <- novels[, lemma :=tolower(lemma)][upos %in% c("PROPN", "NOUN")]
+freq <- nouns[, .(Freq = .N), by = c("lemma", "doc_id")]
+top50 <- freq[order(-Freq), head(.SD, n=50), by = doc_id]
+```
+
+```{r}
+# OR
+# top50 <-
+novels %>%
+  mutate(lemma = tolower(lemma)) %>%
+  filter(upos %in% c("NOUN", "PROPN")) %>%
+  group_by(lemma, doc_id) %>%
+  summarise(Freq = n()) %>%
+  group_by(doc_id) %>%
+  arrange(desc(Freq)) %>%
+  slice_head(n = 50)
+```
+
+## Q4.
+
+```{r}
+mod <- glm(Freq ~ lemma + doc_id, family = poisson, data = top50)
+prd <- fitted(mod)
+```
+
+```{r}
+deviance_residuals <- function(obs, prd) {
+  sign(obs-prd)*sqrt(2*abs(obs*log(obs/prd)-obs+prd))
+}
+```
+
+The sum of squared deviance residuals = `sum(deviance_residuals(top50$Freq, prd)ˆ2)` = `r sum(deviance_residuals(top50$Freq, prd)^2)` is equal to G2 = `deviance(mod)` = `r deviance(mod)`
+
+## Q5.
+
+```{r}
+d_res <- deviance_residuals(top50$Freq, prd)
+sort5 <- top50[
+  order(d_res, decreasing = TRUE),
+  head(.SD, n=5),
+  by = doc_id
+]
+```
+
+```{r}
+# Or:
+# sort5 <-
+top50 %>%
+  group_by(doc_id) %>%
+  arrange(desc(d_res)) %>%
+  slice_head(n=5)
+```
+
+```{r}
+dotplot(Freq ~ lemma | doc_id, data = sort5, layout = c(1,4), grid = TRUE)
+```
+
+
+```{r}
+# plot for each doc_id
+ggplot(data = sort5, aes(x = lemma, y=Freq)) +
+  geom_point() +
+  facet_wrap(~doc_id, ncol = 1)
+```
+
+## 6.
+
+```{r}
+setClass("TermDoc", slots = c(Dat = "data.frame", Dev = "numeric"))
+setGeneric("Gsq", function(x, ...) standardGeneric("Gsq"))
+setMethod("Gsq", "TermDoc", function(x) {
+  sum(x@Dev^2)
+})
+```
+
+```{r}
+combo <- new("TermDoc",
+             Dat = top50,
+             Dev = deviance_residuals(top50$Freq, prd))
+Gsq(combo)
+```
+

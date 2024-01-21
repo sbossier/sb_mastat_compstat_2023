@@ -1,0 +1,308 @@
+---
+title: "MaStat CompStat HW"
+author: "Sander Bossier"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(microbenchmark)
+```
+
+## 1.
+
+```{r}
+# Sum over the named margins of the matrices to obtain the reduced matrices
+HairEye <- apply(
+  X = HairEyeColor,
+  MARGIN = c("Hair", "Eye"),
+  FUN = sum
+)
+ClassSurvived <- apply(
+  X = Titanic,
+  MARGIN = c("Class","Survived"),
+  FUN = sum
+)
+HairEye
+ClassSurvived
+```
+
+## 2.
+
+```{r}
+# Index the rows and columns with the respective decreasing sums
+HairEye[
+  order(rowSums(HairEye), decreasing = TRUE),
+  order(colSums(HairEye), decreasing = TRUE)
+]
+```
+
+## 3.
+
+```{r}
+# Return the ranks of the values of the matrix, first flatten using as.vector
+# Ties are solved by taking the average rank
+HairEye_ranks_vec <- rank(
+  as.vector(HairEye),
+  ties.method = "average"
+)
+
+# Rebuild the matrix of the ranks with the same dimensions of HairEye,
+# using the dimension names of HairEye for the ranked matrix
+HairEye_ranked <- matrix(
+  HairEye_ranks_vec,
+  nrow = nrow(HairEye),
+  ncol = ncol(HairEye),
+  dimnames = dimnames(HairEye)
+)
+
+# Show the ranked matrix
+HairEye_ranked
+```
+
+## 4.
+
+```{r}
+# Create an indexing matrix by row binding the requested combinations as vectors
+HairEye[rbind(c("Brown", "Brown"), c("Blond", "Blue"), c("Brown", "Blue"))]
+```
+
+## 5.
+
+```{r}
+# By converting the matrix to a table it can be converted in a long format by
+# converting to a data frame
+table <- as.table(HairEye)
+df <- as.data.frame(table)
+
+# Print the table using the knitr kable function
+knitr::kable(df)
+```
+
+## 6.
+
+```{r}
+# Create an expression that returns all2x2 for benchmarking purposes
+all2x2_lapply_exp <- expression(
+  {
+    # Nest 2 lapply functions that act on a vector of length = # columns
+    all2x2 <- lapply(seq_len(ncol(HairEye)), function(j) {
+      # Act on a vector of length = # rows (initial values are replaced) 
+      lapply(seq_len(nrow(HairEye)), function(i) {
+        # Calculate the values of the all2x2 elements
+        # The value of the cell itself
+        cell_value <- HairEye[i, j]
+        
+        # Sum of values in the same row but not in the same column
+        row_sum <- sum(HairEye[i, -j])
+        
+        # Sum of values in the same column but not in the same row
+        col_sum <- sum(HairEye[-i, j])
+        
+        # Sum of the values not in the same row and column
+        rest_sum <- sum(HairEye[-i, -j])
+        
+        # Create the 2x2 matrix
+        matrix(c(cell_value, col_sum, row_sum, rest_sum), nrow = 2)
+        })
+      # The result is a list of list containing the matrices for a specific
+      # column in the parent list and a list with each element the matrix for
+      # a specific row in that column.
+      })
+    # Concatenate the parent list to return a list of 16 components
+    all2x2 <- do.call(c, all2x2)
+  }
+)
+
+eval(all2x2_lapply_exp)
+
+all2x2
+```
+
+## 7.
+
+```{r}
+all2x2_for_exp <- expression(
+  {
+    # Create an empty list with the length of the HairEye matrix
+    all2x2 <- vector(mode = "list", length = length(HairEye))
+    
+    # Create an index to store the calculated 2x2 matrices
+    index <- 1
+    
+    # Create a for loop to loop over all the columns
+    for (j in 1:ncol(HairEye)) {
+      # In each column, loop over the rows to calculate the specific 2x2 matrix
+      for (i in 1:nrow(HairEye)) {
+        # The value of the cell itself
+        cell_value <- HairEye[i, j]
+        
+        # Sum of values in the same row but not in the same column
+        row_sum <- sum(HairEye[i, -j])
+        
+        # Sum of values in the same column but not in the same row
+        col_sum <- sum(HairEye[-i, j])
+        
+        # Sum of the values not in the same row and column
+        other_sum <- sum(HairEye[-i, -j])
+        
+        # Create the 2x2 matrix
+        matrix_2x2 <- matrix(
+          c(cell_value, col_sum, row_sum, other_sum),
+          nrow = 2
+          )
+      
+        # Add the 2x2 matrix to the list
+        all2x2[[index]] <- matrix_2x2
+        
+        index <- index + 1
+        }
+      }
+    }
+)
+```
+
+```{r}
+# Benchmark the lapply solution
+all2x2_lapply_benchm <- microbenchmark(
+  all2x2_lapply_exp,
+  unit = "us",
+  times = 10000
+)
+
+# Summarize the lapply benchmark
+all2x2_lapply_benchm_result <- summary(all2x2_lapply_benchm)
+
+# Benchmark the for loop solution
+all2x2_for_benchm <- microbenchmark(
+  all2x2_for_exp,
+  unit = "us",
+  times = 10000
+)
+
+# Summarize the for loop benchmark
+all2x2_for_benchm_result <- summary(all2x2_for_benchm)
+```
+
+The average time of the first computation is `r all2x2_lapply_benchm_result$mean` microseconds and the average time of the second computation is `r all2x2_for_benchm_result$mean` microseconds.
+
+## 8.
+
+```{r}
+
+GlobalOddsRatio <- function(mat) {
+  # Check if input is matrix
+  if (!is.matrix(mat)) stop("is.matrix(x) is not TRUE")
+  # Else calculate the global odd ratio matrix based on the way the 2x2 matrices
+  # are calculated using nested lapply loops
+  OddsRatioList <- lapply(
+    X = seq_len(ncol(mat)),
+    FUN = function(j) {
+      lapply(
+        X = seq_len(nrow(mat)),
+        FUN = function(i) {
+          N_i_j <- mat[i,j]
+          N_i1_j1 <- sum(mat[-i, -j])
+          N_i1_j <- sum(mat[-i, j])
+          N_i_j1 <- sum(mat[i, -j])
+          # Calculate the odds ratio
+          OddsRatio <- (N_i_j * N_i1_j1) / (N_i1_j * N_i_j1)
+      }
+      )
+    }
+  )
+  # Flatten the list to a vector
+  OddsRatioVector <- do.call(c, OddsRatioList)
+  
+  # Reconstruct the matrix based on the properties of the input matrix
+  OddsRatioMatrix <- matrix(
+    OddsRatioVector,
+    nrow=nrow(mat),
+    ncol=ncol(mat),
+    dimnames = dimnames(mat)
+    )
+  
+  # Return the OddsRatioMatrix
+  OddsRatioMatrix
+}
+
+GlobalOddsRatio(HairEye)
+```
+
+## 9.
+
+```{r}
+LogOddsRatio <- function(mat, base = exp(1), adjust = 0.5) {
+  # Check if matrix is in fact a matrix
+  if (!is.matrix(mat)) stop("is.matrix(x) is not TRUE")
+  # Nested lapply for the LogOdds value for a specific cell calculation
+  OddsRatioList <- lapply(
+    X = seq_len(ncol(mat)),
+    FUN = function(j) {
+      lapply(
+        X = seq_len(nrow(mat)),
+        FUN = function(i) {
+          # Use ifelse statement to check if result would be 0, else adjust
+          N_i_j <- ifelse(mat[i,j]==0, adjust, mat[i,j])
+          N_i1_j1 <- ifelse(sum(mat[-i, -j])==0, adjust, sum(mat[-i, -j]))
+          N_i1_j <- ifelse(sum(mat[-i, j])==0, adjust, sum(mat[-i, j]))
+          N_i_j1 <- ifelse(sum(mat[i, -j])==0, adjust, sum(mat[i, -j]))
+          OddsRatio <- (N_i_j * N_i1_j1) / (N_i1_j * N_i_j1)
+          # Calculate LogOddsRatio with specified base
+          LogOddsRatio <- log(OddsRatio, base = base)
+      }
+      )
+    }
+  )
+  # Flatten list to vector
+  OddsRatioVector <- do.call(c, OddsRatioList)
+  # Reconstruct matrix
+  OddsRatioMatrix <- matrix(
+    OddsRatioVector,
+    nrow=nrow(mat),
+    ncol=ncol(mat),
+    dimnames = dimnames(mat)
+    )
+  # Return OddsRatioMatrix
+  OddsRatioMatrix
+}
+
+LogOddsRatio(HairEye)
+```
+
+## 10.
+
+```{r}
+# Create S3 class
+CreateTwoWay <- function(mat) {
+  if (!is.matrix(mat)) stop("is.matrix(x) is not TRUE")
+    class(mat) <- "TwoWay"
+    mat
+}
+
+# Create generic
+GOR <- function(x, ...) {
+  UseMethod("GOR")
+}
+
+# Assign function to the S3 method
+GOR.TwoWay <- GlobalOddsRatio
+
+# Create generic
+LOR <- function(x, ...) {
+  UseMethod("LOR")
+}
+
+# Assign function to the S3 method
+LOR.TwoWay <- LogOddsRatio
+```
+
+```{r}
+# Test functions
+Titanic2Way <- CreateTwoWay(mat = ClassSurvived)
+class(Titanic2Way)
+
+GOR(Titanic2Way)
+LOR(Titanic2Way)
+```
